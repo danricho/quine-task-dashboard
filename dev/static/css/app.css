@@ -11,6 +11,9 @@
     
     main > article { margin: var(--pico-block-spacing-vertical) 0; }
 
+    #milestoneTimelineHolder { margin: 1rem; }
+    #milestoneTimelineHolder { padding: .5rem .75rem; }
+
     #taskPriority input[type=date], #milestones input[type=date], #allocate input[type=date] { max-width: 250px;}
     select.tsk-category, select.tsk-milestone { max-width: 350px;}
 
@@ -52,6 +55,13 @@
       color: var(--pico-form-element-valid-active-border-color);
       cursor: pointer;
     }
+
+    #milestoneList>div>*[disabled] { opacity:1.0 }
+    #milestoneList>div:hover>input { --pico-background-color:var(--pico-form-element-selected-background-color); }
+    .task:nth-child(2n){ --pico-background-color:var(--pico-form-element-active-background-color); }
+    .task:hover { --pico-background-color:var(--pico-form-element-selected-background-color); }
+
+    .milestone-vis-today * { border-color: red; }
 
     #menuAllocationOptions {margin-bottom: 0}
 
@@ -141,4 +151,5 @@
       border-radius: 8px;
       pointer-events: auto; 
       background: none;
+      text-align: center;
     }

@@ -15,12 +15,19 @@
   <link rel="stylesheet" href="static/css/switcher-expand.min.css">   
   <link rel="stylesheet" href="static/css/sidebar.css">   
   <link rel="stylesheet" href="static/css/pico.ext.printing.css">
+  <link rel="stylesheet" href="static/css/d3-milestones.css">
   <link rel="stylesheet" href="static/css/app.css">   
 
   <link rel="icon" type="image/svg+xml" href="static/images/icon.svg">   
   <script src="static/js/jquery_3.7.0.min.js"></script> 
   <script src="static/js/Sortable.min.js"></script> 
   <script src="static/js/jquery.editable.min.js"></script> 
+  <script src="static/js/d3-milestones.min.js"></script>
+
+  <script>
+    // Alias the library function before our dashboard defines const milestones = [...]
+    window.milestonesViz = window.milestones; // keep a reference to the library factory
+  </script>
 
 </head>
 
@@ -57,11 +64,8 @@
           </svg>
         </div>
       </div>
-      <div id="read-only-banner" style="display: none;">
-        <h3 style="color: var(--pico-form-element-invalid-active-border-color); margin: 0.25rem 0;"><em>READ ONLY</em></h3>
-        <em style="color: var(--pico-form-element-invalid-active-border-color);">CHANGES WONT SAVE!</em>
-      </div>  
       <div>
+        <h3 id="read-only-banner" style="color: red; margin: 0.25rem 0; display: none;"><em>READ ONLY</em></h3>
         <button id="saveButton" class="outline" style="margin: 0.25rem 0;">Save Changes</button> 
         <button id="exportButton" class="outline" style="margin: 0.25rem 0;">Export</button>    
         <!-- <button id="saveReadOnly" class="outline" style="margin: 0.5rem 0;">Read Only Version</button>     -->
@@ -82,7 +86,7 @@
       <button id="manageCategories" class="outline" style="margin: 0.25rem 0;">Category Options</button>
 
       <div style="padding: 1rem 0; margin-top: 1rem; border-top: var(--pico-border-width) solid var(--pico-card-border-color);">
-        <small><a href="javascript:void(0)" id="openAboutModal">A quine HTML dashboard</a>.<br>v1.4 - Built with <a href="https://picocss.com" target="_blank">Pico CSS</a>.<br><span id="byLine"></span></small>
+        <small><a href="javascript:void(0)" id="openAboutModal">A quine HTML dashboard</a>.<br>v1.4.3 - <span id="byLine"></span></small>
       </div>
     </div>
 
@@ -92,20 +96,28 @@
 
       <article style="margin-bottom: 2rem;" id="milestones">
       <details style="margin: 0rem;">
-        <summary><h2 style="margin: 0; display: inline-block;">Milestones</h2><small style="margin: 0 1rem;" id="ms-count" class="count"></small></summary>
+        <summary><h2 style="margin: 0; display: inline-block;">Milestone List</h2><small style="margin: 0 1rem;" id="ms-count" class="count"></small></summary>
         <p class="guidance no-print">
           Set and manage project milestones. 
           Tasks linked to a milestone will automatically show its date and name. <br>
           Edit names or dates inline, delete unused milestones, or add a new milestone below.          
         </p>
+        
         <div id="milestoneList"></div>   
         <div role="group" style="margin-top: 0.25rem;" class="no-print"><input type="text" class="ms-name"><input type="date" class="ms-date"><button id="addMilestone">Add</button></div>      
       </details>
       </article>
 
+      <article style="margin-bottom: 2rem;" id="milestoneTimelineExpander">
+        <details style="margin: 0rem;" open="">
+          <summary><h2 style="margin: 0; display: inline-block;">Graphical Timeline</h2></summary>
+          <div id="milestoneTimeline" style="padding: 1rem 0rem; position: relative;"></div>
+        </details>
+      </article>
+
       <article id="allocate" style="margin-bottom: 2rem;">  
       <details style="margin: 0rem;" open="">
-        <summary><h2 style="margin: 0; display: inline-block;">Task Allocations</h2><small style="margin: 0 1rem;" id="tasks-count" class="count">(TBD)</small></summary>
+        <summary><h2 style="margin: 0; display: inline-block;">Task Allocations</h2><small style="margin: 0 1rem;" id="tasks-count" class="count"></small></summary>
         <p class="guidance no-print">
           Assign tasks by dragging tasks between lists to reassign them.
         </p>
@@ -173,7 +185,6 @@
       </article>
     </dialog>
 
-
     <dialog id="alertModal">
       <article>
         <header>
@@ -231,7 +242,7 @@
             Mark as Completed
           </label>
           <footer style="margin-top: 1rem;">
-            <button type="button" id="saveEditedTask" data-saveitemid="1">Save</button>
+            <button type="button" id="saveEditedTask" data-saveitemid="20">Save</button>
             <button type="button" id="cancelEditModal" class="secondary">Cancel</button>
           </footer>
         </form>
@@ -249,7 +260,8 @@
           <strong>Features</strong>
           <ul>
             <li><strong>Task allocation</strong> — drag tasks between team lists (or into <em>Unallocated</em>). Reordering inside a person's list uses a <em>minimal-change</em> priority shuffle so only that list is affected.</li>
-            <li><strong>Perpetual tasks & milestones</strong> — tasks and milestones can exist without a due date. Undated milestones act as thematic groupings, and tasks may be explicitly marked as <em>No due date</em>.</li>
+            <li><strong>Perpetual tasks &amp; milestones</strong> — tasks and milestones can exist without a due date. Undated milestones act as thematic groupings, and tasks may be explicitly marked as <em>No due date</em>.</li>
+            <li><strong>Graphical Milestone Timeline</strong> — milestones with a due date are shown on the graphic timeline.</li>
             <li><strong>Backlog-aware behavior</strong> — the divider is fixed in allocation lists (non-draggable) and supports dropping to <em>empty</em> above/below via subtle dropzones. Cross-divider moves 'mint' the smallest possible priority so items stay exactly where dropped.</li>
             <li><strong>Filtering</strong> — filter by <em>Category</em>, <em>Milestone</em> (including dated, undated, and direct-dated tasks), and a matching text search.</li>
             <li><strong>Inline editing</strong> — edit task names, due dates, milestone links, category, allocation, and links (Jira, Confluence, Other) in place.</li>
@@ -258,7 +270,7 @@
             <li><strong>Export</strong> — quick HTML summary for email/Word via the Export button.</li>
             <li><strong>Read Only render mode</strong> — a saved html can be setup for view only via a variable set to false (edit the html - variable is 'renderReadOnly').</li>
             <li><strong>Save &amp; persist</strong> — changes are saved in this self-contained (quine) HTML file.</li>
-            <li><strong>Tech</strong> — Pico CSS, jQuery, SortableJS, jquery.editable.</li>
+            <li><strong>Tech</strong> — Pico CSS, jQuery, SortableJS, jquery.editable, d3-milestones.</li>
           </ul>
 
           <hr>          
@@ -384,39 +396,382 @@
   
 <!-- data -->
 <script>
-saveDate = "2025-08-27 12:52";
-pageTitle = "Test Data Dashboard";
-byLine = "Me.";
+saveDate = "2026-01-21 17:30";
+pageTitle = "Demo Project";
+byLine = "Me, 2026";
 renderReadOnly = false;
 logo = `
-<svg width="2rem" height="2rem" xmlns="http://www.w3.org/2000/svg">
-  <rect width="2rem" height="2rem" x="0" y="0"/>
+<svg width="2rem" height="2rem" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+  <rect width="64" height="64" rx="10" ry="10" fill="currentColor" opacity="0.12"/>
+  <path d="M14 40c10-2 16-10 20-22 4 12 10 20 20 22-10 2-16 10-20 22-4-12-10-20-20-22z"
+        fill="currentColor" opacity="0.65"/>
 </svg>
 `;
 const allocationOptions = [
-  { "name": "Dennis", "type": "Senior Developer" },
-  { "name": "Gilbert", "type": "Junior Developer" },
-  { "name": "TEST", "type": "debug" }
+  {
+    "name": "Avery (SE Lead)",
+    "type": "Systems Engineering Lead"
+  },
+  {
+    "name": "Blake (SW Lead)",
+    "type": "Software Team Lead"
+  },
+  {
+    "name": "Morgan (DevOps)",
+    "type": "DevOps / CI-CD Engineer"
+  },
+  {
+    "name": "Riley, M (Test)",
+    "type": "Test / Verification Engineer"
+  }
 ];
 const milestones = [
-  { "id": 1,  "name": "Test Milestone 1", "date": "2026-01-18" },
-  { "id": 2,  "name": "Test Milestone 2", "date": "2026-01-24" },
-  { "id": 3,  "name": "Production Release", "date": "2026-02-01" },
-  { "id": 4,  "name": "**GLOBAL** Release", "date": "" }
+  {
+    "id": 10,
+    "name": "Kickoff / Charter Approved",
+    "date": "2026-02-03"
+  },
+  {
+    "id": 20,
+    "name": "ConOps + Needs Baselined",
+    "date": "2026-02-21"
+  },
+  {
+    "id": 30,
+    "name": "System Requirements Review (SRR)",
+    "date": "2026-03-14"
+  },
+  {
+    "id": 50,
+    "name": "Preliminary Design Review (PDR)",
+    "date": "2026-04-18"
+  },
+  {
+    "id": 60,
+    "name": "Critical Design Review (CDR)",
+    "date": "2026-06-06"
+  },
+  {
+    "id": 80,
+    "name": "Test Readiness Review (TRR)",
+    "date": "2026-08-01"
+  },
+  {
+    "id": 110,
+    "name": "Operational Readiness Review (ORR)",
+    "date": "2026-09-26"
+  },
+  {
+    "id": 120,
+    "name": "Release to Production",
+    "date": "2026-10-10"
+  },
+  {
+    "id": 999,
+    "name": "Ongoing / Evergreen / Perpetual",
+    "date": ""
+  }
 ];
 const tasks = [
-  { "id": 1, "text": "Assigned Task 1 (MS1)", "due": null, "milestoneId": 1, "assignedTo": "Dennis", "priority": 3, "link-conf": "", "link-jira": "https://google.com", "category": "ADM", "link-other": "", "completed": false },
-  { "id": 2, "text": "Assigned Task 2 (MS2)", "due": null, "milestoneId": 2, "assignedTo": "Gilbert", "priority": 0, "category": "ADM", "link-conf": "https://google.com", "link-jira": "https://google.com", "link-other": "https://google.com", "completed": false },
-  { "id": 3, "text": "Unassigned Task 1 (MS1)", "due": null, "milestoneId": 1, "assignedTo": null, "priority": 1, "category": "INV", "link-conf": "https://google.com", "link-jira": "https://google.com", "link-other": "https://google.com", "completed": false },
-  { "id": 4, "text": "Release Notes", "due": null, "milestoneId": 4, "assignedTo": "Gilbert", "priority": 1, "category": "INV", "link-conf": "https://google.com", "link-jira": "https://google.com", "link-other": "https://google.com", "completed": false },
-  { "id": 5, "text": "Comb Hair", "due": null, "milestoneId": null, "assignedTo": "TEST", "priority": 1, "category": "INV", "link-conf": "https://google.com", "link-jira": "https://google.com", "link-other": "https://google.com", "completed": false },
-  { "id": 6, "text": "Another test", "due": "2026-01-24", "milestoneId": null, "assignedTo": null, "category": null, "priority": 6 },
-  { "id": -1, "text": "-- Backlog Starts Here --", "assignedTo": null, "priority": 5, "isBacklogDivider": true }
+  {
+    "id": 1,
+    "text": "Stand up repo + baseline templates",
+    "due": null,
+    "milestoneId": 10,
+    "assignedTo": "Blake (SW Lead)",
+    "priority": 1,
+    "category": "OPS",
+    "link-conf": "",
+    "link-jira": "",
+    "link-other": "",
+    "completed": false
+  },
+  {
+    "id": 2,
+    "text": "Define top-level workstreams + owners",
+    "due": null,
+    "milestoneId": 10,
+    "assignedTo": "Avery (SE Lead)",
+    "priority": 3,
+    "category": "PM",
+    "link-conf": "",
+    "link-jira": "",
+    "link-other": "",
+    "completed": false
+  },
+  {
+    "id": 3,
+    "text": "Draft ConOps + key operational scenarios",
+    "due": null,
+    "milestoneId": 20,
+    "assignedTo": "Avery (SE Lead)",
+    "priority": 4,
+    "category": "DOC",
+    "link-conf": "",
+    "link-jira": "",
+    "link-other": "",
+    "completed": false
+  },
+  {
+    "id": 4,
+    "text": "Stakeholder workshop: success criteria + constraints",
+    "due": null,
+    "milestoneId": 20,
+    "assignedTo": "Avery (SE Lead)",
+    "priority": 5,
+    "category": "PM",
+    "link-conf": "",
+    "link-jira": "",
+    "link-other": "",
+    "completed": false
+  },
+  {
+    "id": 5,
+    "text": "Capture system requirements + acceptance criteria",
+    "due": null,
+    "milestoneId": 30,
+    "assignedTo": "Avery (SE Lead)",
+    "priority": 6,
+    "category": "REQ",
+    "link-conf": "",
+    "link-jira": "",
+    "link-other": "",
+    "completed": false
+  },
+  {
+    "id": 6,
+    "text": "Software requirements: services, telemetry, update",
+    "due": null,
+    "milestoneId": 30,
+    "assignedTo": "Blake (SW Lead)",
+    "priority": 7,
+    "category": "REQ",
+    "link-conf": "",
+    "link-jira": "",
+    "link-other": "",
+    "completed": false
+  },
+  {
+    "id": 7,
+    "text": "System architecture: context diagram + interfaces",
+    "due": null,
+    "milestoneId": 50,
+    "assignedTo": "Avery (SE Lead)",
+    "priority": 15,
+    "category": "ARC",
+    "link-conf": "",
+    "link-jira": "",
+    "link-other": "",
+    "completed": false
+  },
+  {
+    "id": 8,
+    "text": "SW architecture: service boundaries + error strategy",
+    "due": null,
+    "milestoneId": 50,
+    "assignedTo": "Blake (SW Lead)",
+    "priority": 8,
+    "category": "ARC",
+    "link-conf": "",
+    "link-jira": "",
+    "link-other": "",
+    "completed": false
+  },
+  {
+    "id": 9,
+    "text": "CDR package: ICD v1 + design notes",
+    "due": null,
+    "milestoneId": 60,
+    "assignedTo": "Avery (SE Lead)",
+    "priority": 16,
+    "category": "DOC",
+    "link-conf": "",
+    "link-jira": "",
+    "link-other": "",
+    "completed": false
+  },
+  {
+    "id": 10,
+    "text": "CI pipeline: build + unit tests + static checks",
+    "due": null,
+    "milestoneId": 60,
+    "assignedTo": "Morgan (DevOps)",
+    "priority": 9,
+    "category": "OPS",
+    "link-conf": "",
+    "link-jira": "",
+    "link-other": "",
+    "completed": false
+  },
+  {
+    "id": 11,
+    "text": "Verification plan: map reqs → tests → evidence",
+    "due": null,
+    "milestoneId": 80,
+    "assignedTo": "Riley, M (Test)",
+    "priority": 17,
+    "category": "TST",
+    "link-conf": "",
+    "link-jira": "",
+    "link-other": "",
+    "completed": false
+  },
+  {
+    "id": 12,
+    "text": "Dry-run test execution on integration rig",
+    "due": null,
+    "milestoneId": 80,
+    "assignedTo": "Riley, M (Test)",
+    "priority": 18,
+    "category": "TST",
+    "link-conf": "",
+    "link-jira": "",
+    "link-other": "",
+    "completed": false
+  },
+  {
+    "id": 13,
+    "text": "ORR checklist: ops readiness + rollback plan",
+    "due": null,
+    "milestoneId": 110,
+    "assignedTo": "Morgan (DevOps)",
+    "priority": 19,
+    "category": "OPS",
+    "link-conf": "",
+    "link-jira": "",
+    "link-other": "",
+    "completed": false
+  },
+  {
+    "id": 14,
+    "text": "Release notes + support handover",
+    "due": null,
+    "milestoneId": 120,
+    "assignedTo": "Blake (SW Lead)",
+    "priority": 12,
+    "category": "DOC",
+    "link-conf": "",
+    "link-jira": "",
+    "link-other": "",
+    "completed": false
+  },
+  {
+    "id": 15,
+    "text": "Schedule PDR rehearsal (admin)",
+    "due": "2026-04-10",
+    "milestoneId": null,
+    "assignedTo": "Avery (SE Lead)",
+    "priority": 11,
+    "category": "PM",
+    "link-conf": "",
+    "link-jira": "",
+    "link-other": "",
+    "completed": false
+  },
+  {
+    "id": 16,
+    "text": "Cut beta build for integration rig (artifact drop)",
+    "due": "2026-06-27",
+    "milestoneId": null,
+    "assignedTo": "Blake (SW Lead)",
+    "priority": 13,
+    "category": "OPS",
+    "link-conf": "",
+    "link-jira": "",
+    "link-other": "",
+    "completed": false
+  },
+  {
+    "id": 17,
+    "text": "Decide time-sync approach (PTP vs NTP) + record decision",
+    "due": null,
+    "milestoneId": 50,
+    "assignedTo": null,
+    "priority": 10,
+    "category": "ARC",
+    "link-conf": "",
+    "link-jira": "",
+    "link-other": "",
+    "completed": false
+  },
+  {
+    "id": 18,
+    "text": "Bootstrap coding standards + formatter config",
+    "due": null,
+    "milestoneId": 10,
+    "assignedTo": "Blake (SW Lead)",
+    "priority": 0,
+    "category": "OPS",
+    "link-conf": "",
+    "link-jira": "",
+    "link-other": "",
+    "completed": true
+  },
+  {
+    "id": 19,
+    "text": "Weekly status update cadence (admin)",
+    "due": null,
+    "milestoneId": 999,
+    "assignedTo": "Avery (SE Lead)",
+    "priority": 2,
+    "category": "PM",
+    "link-conf": "",
+    "link-jira": "",
+    "link-other": "",
+    "completed": false
+  },
+  {
+    "id": -1,
+    "text": "-- Backlog Starts Here --",
+    "assignedTo": null,
+    "priority": 14,
+    "isBacklogDivider": true
+  },
+  {
+    "id": 20,
+    "text": "Undated Example Task",
+    "due": null,
+    "milestoneId": null,
+    "assignedTo": null,
+    "category": "TST",
+    "priority": 20,
+    "link-conf": "",
+    "link-jira": "",
+    "link-other": "",
+    "completed": false
+  }
 ];
 const categories = [
-  { "code": "ADM", "name": "Admin", "color": "#64748b" },
-  { "code": "INV", "name": "Investigation", "color": "#06b6d4" },
-  { "code": "TST", "name": "test - debug cat", "color": "#22c55e" }
+  {
+    "code": "PM",
+    "name": "Program / Admin",
+    "color": "#64748b"
+  },
+  {
+    "code": "REQ",
+    "name": "Requirements",
+    "color": "#06b6d4"
+  },
+  {
+    "code": "ARC",
+    "name": "Architecture & Design",
+    "color": "#8b5cf6"
+  },
+  {
+    "code": "OPS",
+    "name": "DevOps / Tooling",
+    "color": "#f97316"
+  },
+  {
+    "code": "TST",
+    "name": "Verification & Test",
+    "color": "#f59e0b"
+  },
+  {
+    "code": "DOC",
+    "name": "Docs & Reviews",
+    "color": "#a855f7"
+  }
 ];
 </script>
 <!-- end data -->
