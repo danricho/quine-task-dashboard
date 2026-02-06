@@ -17,7 +17,7 @@
   <link rel="stylesheet" href="static/css/pico.ext.printing.css">
   <link rel="stylesheet" href="static/css/app.css">   
 
-  <link rel="icon" type="image/svg+xml" href="static/images/icon.svg">
+  <link rel="icon" type="image/svg+xml" href="static/images/icon.svg">   
   <script src="static/js/jquery_3.7.0.min.js"></script> 
   <script src="static/js/Sortable.min.js"></script> 
   <script src="static/js/jquery.editable.min.js"></script> 
@@ -27,6 +27,16 @@
 <body>
         
 <div id="container">
+
+    <div style="display: none;" id="hidden-templates">
+      <div role="group" style="margin-top: 0.25rem;" class="no-print" id="addTaskInputs">
+        <input type="text" class="tsk-name">
+        <select class="tsk-milestone"></select>
+        <input type="date" class="tsk-date">
+        <select class="tsk-category"></select>
+        <button id="addTask" class="addTask" data-allocation="">Add</button>
+      </div>
+    </div>
 
     <div id="sidebar" class="no-print" style="border-right: var(--pico-border-width) solid var(--pico-card-border-color); width: 244px;">
       <div class="flex items-center" style="margin: 2rem 0;">
@@ -47,6 +57,10 @@
           </svg>
         </div>
       </div>
+      <div id="read-only-banner" style="display: none;">
+        <h3 style="color: var(--pico-form-element-invalid-active-border-color); margin: 0.25rem 0;"><em>READ ONLY</em></h3>
+        <em style="color: var(--pico-form-element-invalid-active-border-color);">CHANGES WONT SAVE!</em>
+      </div>  
       <div>
         <button id="saveButton" class="outline" style="margin: 0.25rem 0;">Save Changes</button> 
         <button id="exportButton" class="outline" style="margin: 0.25rem 0;">Export</button>    
@@ -57,7 +71,6 @@
       <div style="margin: 3rem 0;">
         <ul>
           <li><a href="#milestones">Milestones</a></li>
-          <li><a href="#taskPriority">Prioritize</a></li>
           <li><a href="#allocate">Allocate</a>
           <ul id="menuAllocationOptions"></ul></li>
           <li><a href="#completedTasks">Completed</a></li>
@@ -69,7 +82,7 @@
       <button id="manageCategories" class="outline" style="margin: 0.25rem 0;">Category Options</button>
 
       <div style="padding: 1rem 0; margin-top: 1rem; border-top: var(--pico-border-width) solid var(--pico-card-border-color);">
-        <small><a href="javascript:void(0)" id="openAboutModal">A quine HTML dashboard</a>.<br>v1.3 - Built with <a href="https://picocss.com" target="_blank">Pico CSS</a>.<br><span id="byLine"></span></small>
+        <small><a href="javascript:void(0)" id="openAboutModal">A quine HTML dashboard</a>.<br>v1.4 - Built with <a href="https://picocss.com" target="_blank">Pico CSS</a>.<br><span id="byLine"></span></small>
       </div>
     </div>
 
@@ -89,32 +102,10 @@
         <div role="group" style="margin-top: 0.25rem;" class="no-print"><input type="text" class="ms-name"><input type="date" class="ms-date"><button id="addMilestone">Add</button></div>      
       </details>
       </article>
-            
-      <article style="margin-bottom: 2rem;" id="taskPriority">  
-      <details style="margin: 0rem;">
-        <summary><h2 style="margin: 0; display: inline-block;">Task Priority Order</h2><small style="margin: 0 1rem;" id="tasks-priority-count" class="count"></small></summary>
-        <p class="guidance no-print">
-          Drag and drop tasks to set the tasks' overall priority order. <br>
-          The backlog divider marks where active tasks end and backlog tasks begin. <br>
-          Create new tasks at the bottom of the list.
-        </p>
-        <p class="no-print active-filter">
-          Task Filtering: <span class="active-filter-summary"></span>
-        </p>
-        <div class="task-list task-priority-list" id="task-priority-holder"></div>
-        <div role="group" style="margin-top: 0.25rem;" class="no-print" id="addTaskInputs">
-          <input type="text" class="tsk-name">
-          <select class="tsk-milestone"></select>
-          <input type="date" class="tsk-date">
-          <select class="tsk-category"></select>
-          <button id="addTask" class="addTask" data-allocation="">Add</button>
-        </div>
-      </details>
-      </article>
 
       <article id="allocate" style="margin-bottom: 2rem;">  
       <details style="margin: 0rem;" open="">
-        <summary><h2 style="margin: 0; display: inline-block;">Task Allocations</h2></summary>
+        <summary><h2 style="margin: 0; display: inline-block;">Task Allocations</h2><small style="margin: 0 1rem;" id="tasks-count" class="count">(TBD)</small></summary>
         <p class="guidance no-print">
           Assign tasks by dragging tasks between lists to reassign them.
         </p>
@@ -257,14 +248,15 @@
           <hr>
           <strong>Features</strong>
           <ul>
-            <li><strong>Master priority ordering</strong> — drag tasks up/down to set the global order. The backlog divider can be moved <em>here only</em> to adjust the Active/Backlog boundary.</li>
-            <li><strong>Task allocation</strong> — drag tasks between team lists (or into <em>Unallocated</em>). Reordering inside a person’s list uses a <em>minimal-change</em> priority shuffle so only that list is affected.</li>
-            <li><strong>Backlog-aware behavior</strong> — the divider is fixed in allocation lists (non-draggable) and supports dropping to <em>empty</em> above/below via subtle dropzones. Cross-divider moves “mint” the smallest possible priority so items stay exactly where dropped.</li>
-            <li><strong>Filtering</strong> — filter by <em>Category</em>, <em>Milestone</em> (including a “Direct-dated” pseudo-milestone), and a <em>matching text</em> search that checks both task text and linked milestone name. A live summary appears at the top of both the Master and Allocation sections.</li>
+            <li><strong>Task allocation</strong> — drag tasks between team lists (or into <em>Unallocated</em>). Reordering inside a person's list uses a <em>minimal-change</em> priority shuffle so only that list is affected.</li>
+            <li><strong>Perpetual tasks & milestones</strong> — tasks and milestones can exist without a due date. Undated milestones act as thematic groupings, and tasks may be explicitly marked as <em>No due date</em>.</li>
+            <li><strong>Backlog-aware behavior</strong> — the divider is fixed in allocation lists (non-draggable) and supports dropping to <em>empty</em> above/below via subtle dropzones. Cross-divider moves 'mint' the smallest possible priority so items stay exactly where dropped.</li>
+            <li><strong>Filtering</strong> — filter by <em>Category</em>, <em>Milestone</em> (including dated, undated, and direct-dated tasks), and a matching text search.</li>
             <li><strong>Inline editing</strong> — edit task names, due dates, milestone links, category, allocation, and links (Jira, Confluence, Other) in place.</li>
             <li><strong>Completed tasks</strong> — mark done and restore later from the Completed view.</li>
             <li><strong>Manage options</strong> — add/remove <em>Allocation Options</em> (team members) and <em>Categories</em> from their modals.</li>
             <li><strong>Export</strong> — quick HTML summary for email/Word via the Export button.</li>
+            <li><strong>Read Only render mode</strong> — a saved html can be setup for view only via a variable set to false (edit the html - variable is 'renderReadOnly').</li>
             <li><strong>Save &amp; persist</strong> — changes are saved in this self-contained (quine) HTML file.</li>
             <li><strong>Tech</strong> — Pico CSS, jQuery, SortableJS, jquery.editable.</li>
           </ul>
@@ -299,12 +291,16 @@
           <h3>Manage Allocation Options</h3>
         </header>
         <form>  
-          <label>Remove Existing:</label>
+          <label>Existing (Edit/Remove):</label>
           <ul id="existingAllocationsList" style="max-height: 200px; overflow-y: auto;"></ul>
           <hr>
           <label>
             Add New Allocation:
             <input type="text" id="newAllocationInput" placeholder="e.g. Maria">
+          </label>
+          <label>
+            Type (optional):
+            <input type="text" id="newAllocationTypeInput" placeholder="e.g. Team or Job Title">
           </label>
           <button type="button" id="addAllocationOption">Add</button>
           <hr>
@@ -391,510 +387,36 @@
 saveDate = "2025-08-27 12:52";
 pageTitle = "Test Data Dashboard";
 byLine = "Me.";
+renderReadOnly = false;
 logo = `
 <svg width="2rem" height="2rem" xmlns="http://www.w3.org/2000/svg">
   <rect width="2rem" height="2rem" x="0" y="0"/>
 </svg>
 `;
 const allocationOptions = [
-  "Dennis",
-  "Gilbert",
-  "External Stakeholder",
-  "Maria",
-  "Systems Team"
+  { "name": "Dennis", "type": "Senior Developer" },
+  { "name": "Gilbert", "type": "Junior Developer" },
+  { "name": "TEST", "type": "debug" }
 ];
 const milestones = [
-  {
-    "id": 1,
-    "name": "Test Milestone 1",
-    "date": "2025-07-18"
-  },
-  {
-    "id": 2,
-    "name": "Test Milestone 2",
-    "date": "2025-07-24"
-  },
-  {
-    "id": 3,
-    "name": "Test Milestone 3",
-    "date": "2025-11-21"
-  },
-  {
-    "id": 4,
-    "name": "Design Freeze",
-    "date": "2025-08-30"
-  },
-  {
-    "id": 5,
-    "name": "Verification Start",
-    "date": "2025-09-15"
-  },
-  {
-    "id": 6,
-    "name": "Release Prep",
-    "date": "2025-10-20"
-  },
-  {
-    "id": 7,
-    "name": "Beta Freeze",
-    "date": "2025-11-30"
-  },
-  {
-    "id": 8,
-    "name": "UAT Start",
-    "date": "2025-12-10"
-  },
-  {
-    "id": 9,
-    "name": "UAT Complete",
-    "date": "2026-01-15"
-  },
-  {
-    "id": 10,
-    "name": "Production Release",
-    "date": "2026-02-01"
-  }
+  { "id": 1,  "name": "Test Milestone 1", "date": "2026-01-18" },
+  { "id": 2,  "name": "Test Milestone 2", "date": "2026-01-24" },
+  { "id": 3,  "name": "Production Release", "date": "2026-02-01" },
+  { "id": 4,  "name": "**GLOBAL** Release", "date": "" }
 ];
 const tasks = [
-  {
-    "id": 1,
-    "text": "Assigned Task 1 (MS1)",
-    "due": null,
-    "milestoneId": 1,
-    "assignedTo": "Dennis",
-    "priority": 3,
-    "link-conf": "",
-    "link-jira": "https://google.com.au",
-    "category": "HDW",
-    "link-other": "",
-    "completed": false
-  },
-  {
-    "id": 2,
-    "text": "Assigned Task 2 (MS2)",
-    "due": null,
-    "milestoneId": 2,
-    "assignedTo": "Gilbert",
-    "priority": 0,
-    "category": "DEV",
-    "link-conf": "https://google.com.au",
-    "link-jira": "https://google.com.au",
-    "link-other": "https://google.com.au",
-    "completed": false
-  },
-  {
-    "id": 3,
-    "text": "Unassigned Task 1 (MS1)",
-    "due": null,
-    "milestoneId": 1,
-    "assignedTo": null,
-    "priority": 1,
-    "category": "DEV",
-    "link-conf": "https://google.com.au",
-    "link-jira": "https://google.com.au",
-    "link-other": "https://google.com.au",
-    "completed": false
-  },
-  {
-    "id": 4,
-    "text": "Unassigned Task 2 (MS2)",
-    "due": null,
-    "milestoneId": 2,
-    "assignedTo": null,
-    "priority": 4,
-    "category": "DEV",
-    "link-conf": "",
-    "link-jira": "https://google.com.au",
-    "link-other": "https://google.com.au",
-    "completed": false
-  },
-  {
-    "id": 5,
-    "text": "Unassigned Task 3 (MS3)",
-    "due": null,
-    "milestoneId": 3,
-    "assignedTo": null,
-    "priority": 7,
-    "category": "DEV",
-    "link-conf": "https://google.com.au",
-    "link-jira": "https://google.com.au",
-    "link-other": "https://google.com.au",
-    "completed": false
-  },
-  {
-    "id": 6,
-    "text": "Assigned Task 3 (MS3)",
-    "due": null,
-    "milestoneId": 3,
-    "assignedTo": "Gilbert",
-    "priority": 8,
-    "category": "DEV",
-    "link-conf": "https://google.com.au",
-    "link-jira": "https://google.com.au",
-    "link-other": "https://google.com.au",
-    "completed": false
-  },
-  {
-    "id": 7,
-    "text": "Assigned Task 4 (LATE)",
-    "due": "2025-07-01",
-    "milestoneId": null,
-    "assignedTo": "Dennis",
-    "priority": 2,
-    "category": "DEV",
-    "link-conf": "https://google.com.au",
-    "link-jira": "https://google.com.au",
-    "link-other": "https://google.com.au",
-    "completed": false
-  },
-  {
-    "id": 8,
-    "text": "Assigned Task 5 (SOON)",
-    "due": "2025-07-28",
-    "milestoneId": null,
-    "assignedTo": "Gilbert",
-    "priority": 5,
-    "category": "DEV",
-    "link-conf": "https://google.com.au",
-    "link-jira": "https://google.com.au",
-    "link-other": "",
-    "completed": false
-  },
-  {
-    "id": 9,
-    "text": "Assigned Task 6 (FUTURE)",
-    "due": "2025-09-27",
-    "milestoneId": null,
-    "assignedTo": "Dennis",
-    "priority": 9,
-    "category": "VAV",
-    "link-conf": "",
-    "link-jira": "https://google.com.au",
-    "link-other": "",
-    "completed": false
-  },
-  {
-    "id": 10,
-    "text": "Unassigned Task 4 (LATE)",
-    "due": "2025-07-02",
-    "milestoneId": null,
-    "assignedTo": null,
-    "priority": 10,
-    "category": "DEV",
-    "link-conf": "https://google.com.au",
-    "link-jira": "https://google.com.au",
-    "link-other": "",
-    "completed": false
-  },
-  {
-    "id": 11,
-    "text": "Unassigned Task 5 (SOON)",
-    "due": "2025-07-28",
-    "milestoneId": null,
-    "assignedTo": null,
-    "priority": 11,
-    "category": "DEV",
-    "link-conf": "https://google.com.au",
-    "link-jira": "https://google.com.au",
-    "link-other": "https://google.com.au",
-    "completed": false
-  },
-  {
-    "id": 12,
-    "text": "Unassigned Task 5 (FUTURE)",
-    "due": "2025-10-04",
-    "milestoneId": null,
-    "assignedTo": null,
-    "priority": 12,
-    "category": "OEM",
-    "link-conf": "https://google.com.au",
-    "link-jira": "",
-    "link-other": "https://google.com.au",
-    "completed": false
-  },
-  {
-    "id": -1,
-    "text": "-- Backlog Starts Here --",
-    "priority": 6,
-    "isBacklogDivider": true
-  },
-  {
-    "id": 13,
-    "text": "Completed Task",
-    "due": "2025-07-18",
-    "milestoneId": null,
-    "assignedTo": null,
-    "priority": 13,
-    "category": "ADM",
-    "link-conf": "https://google.com.au",
-    "link-jira": "https://google.com.au",
-    "link-other": "https://google.com.au",
-    "completed": true
-  },
-  {
-    "id": 14,
-    "text": "Design Document Review",
-    "due": null,
-    "milestoneId": 4,
-    "assignedTo": "Maria",
-    "priority": 14,
-    "category": "DOC",
-    "link-conf": "",
-    "link-jira": "",
-    "link-other": "",
-    "completed": false
-  },
-  {
-    "id": 15,
-    "text": "Test Case Drafting",
-    "due": null,
-    "milestoneId": 5,
-    "assignedTo": "Maria",
-    "priority": 15,
-    "category": "VAV",
-    "link-conf": "",
-    "link-jira": "",
-    "link-other": "",
-    "completed": false
-  },
-  {
-    "id": 16,
-    "text": "Interface Review",
-    "due": "2025-08-15",
-    "milestoneId": null,
-    "assignedTo": "Systems Team",
-    "priority": 12,
-    "category": "SYS",
-    "link-conf": "",
-    "link-jira": "",
-    "link-other": "",
-    "completed": false
-  },
-  {
-    "id": 17,
-    "text": "Stakeholder Alignment",
-    "due": null,
-    "milestoneId": 6,
-    "assignedTo": "External Stakeholder",
-    "priority": 17,
-    "category": "OEM",
-    "link-conf": "",
-    "link-jira": "",
-    "link-other": "",
-    "completed": false
-  },
-  {
-    "id": 18,
-    "text": "Rework Analysis",
-    "due": "2025-07-31",
-    "milestoneId": null,
-    "assignedTo": null,
-    "priority": 18,
-    "category": "DEV",
-    "link-conf": "",
-    "link-jira": "",
-    "link-other": "",
-    "completed": false
-  },
-  {
-    "id": 19,
-    "text": "System Test Prep",
-    "due": null,
-    "milestoneId": 5,
-    "assignedTo": "Systems Team",
-    "priority": 19,
-    "category": "VAV",
-    "link-conf": "",
-    "link-jira": "",
-    "link-other": "",
-    "completed": false
-  },
-  {
-    "id": 20,
-    "text": "Final Packaging",
-    "due": "2025-11-01",
-    "milestoneId": null,
-    "assignedTo": "Maria",
-    "priority": 20,
-    "category": "ADM",
-    "link-conf": "",
-    "link-jira": "",
-    "link-other": "",
-    "completed": false
-  },
-  {
-    "id": 21,
-    "text": "Architecture Refactor",
-    "due": null,
-    "milestoneId": 4,
-    "assignedTo": null,
-    "priority": 21,
-    "category": "SYS",
-    "link-conf": "",
-    "link-jira": "",
-    "link-other": "",
-    "completed": false
-  },
-  {
-    "id": 22,
-    "text": "WOWEE",
-    "due": null,
-    "milestoneId": 3,
-    "assignedTo": "External Stakeholder",
-    "category": "ANT",
-    "priority": 22
-  },
-  {
-    "id": 23,
-    "text": "Implement Auth v2",
-    "due": null,
-    "milestoneId": 5,
-    "assignedTo": "Dennis",
-    "priority": 17,
-    "category": "DEV",
-    "link-conf": "",
-    "link-jira": "",
-    "link-other": "",
-    "completed": false
-  },
-  {
-    "id": 24,
-    "text": "Procure Test Hardware",
-    "due": null,
-    "milestoneId": 5,
-    "assignedTo": "Systems Team",
-    "priority": 18,
-    "category": "HDW",
-    "link-conf": "",
-    "link-jira": "",
-    "link-other": "",
-    "completed": false
-  },
-  {
-    "id": 25,
-    "text": "Draft Training Plan",
-    "due": null,
-    "milestoneId": 7,
-    "assignedTo": "Maria",
-    "priority": 19,
-    "category": "DOC",
-    "link-conf": "",
-    "link-jira": "",
-    "link-other": "",
-    "completed": false
-  },
-  {
-    "id": 26,
-    "text": "UAT Environment Setup",
-    "due": null,
-    "milestoneId": 8,
-    "assignedTo": "Gilbert",
-    "priority": 20,
-    "category": "SYS",
-    "link-conf": "",
-    "link-jira": "",
-    "link-other": "",
-    "completed": false
-  },
-  {
-    "id": 27,
-    "text": "Customer Training Deck",
-    "due": null,
-    "milestoneId": 9,
-    "assignedTo": "External Stakeholder",
-    "priority": 21,
-    "category": "DOC",
-    "link-conf": "",
-    "link-jira": "",
-    "link-other": "",
-    "completed": false
-  },
-  {
-    "id": 28,
-    "text": "Regression Pack Refresh",
-    "due": null,
-    "milestoneId": 5,
-    "assignedTo": "Systems Team",
-    "priority": 22,
-    "category": "VAV",
-    "link-conf": "",
-    "link-jira": "",
-    "link-other": "",
-    "completed": false
-  },
-  {
-    "id": 29,
-    "text": "Performance Tuning Sprint",
-    "due": "2025-10-05",
-    "milestoneId": null,
-    "assignedTo": "Dennis",
-    "priority": 23,
-    "category": "DEV",
-    "link-conf": "",
-    "link-jira": "",
-    "link-other": "",
-    "completed": false
-  },
-  {
-    "id": 30,
-    "text": "Finalize Release Notes",
-    "due": null,
-    "milestoneId": 10,
-    "assignedTo": "Maria",
-    "priority": 24,
-    "category": "DOC",
-    "link-conf": "",
-    "link-jira": "",
-    "link-other": "",
-    "completed": false
-  }
+  { "id": 1, "text": "Assigned Task 1 (MS1)", "due": null, "milestoneId": 1, "assignedTo": "Dennis", "priority": 3, "link-conf": "", "link-jira": "https://google.com", "category": "ADM", "link-other": "", "completed": false },
+  { "id": 2, "text": "Assigned Task 2 (MS2)", "due": null, "milestoneId": 2, "assignedTo": "Gilbert", "priority": 0, "category": "ADM", "link-conf": "https://google.com", "link-jira": "https://google.com", "link-other": "https://google.com", "completed": false },
+  { "id": 3, "text": "Unassigned Task 1 (MS1)", "due": null, "milestoneId": 1, "assignedTo": null, "priority": 1, "category": "INV", "link-conf": "https://google.com", "link-jira": "https://google.com", "link-other": "https://google.com", "completed": false },
+  { "id": 4, "text": "Release Notes", "due": null, "milestoneId": 4, "assignedTo": "Gilbert", "priority": 1, "category": "INV", "link-conf": "https://google.com", "link-jira": "https://google.com", "link-other": "https://google.com", "completed": false },
+  { "id": 5, "text": "Comb Hair", "due": null, "milestoneId": null, "assignedTo": "TEST", "priority": 1, "category": "INV", "link-conf": "https://google.com", "link-jira": "https://google.com", "link-other": "https://google.com", "completed": false },
+  { "id": 6, "text": "Another test", "due": "2026-01-24", "milestoneId": null, "assignedTo": null, "category": null, "priority": 6 },
+  { "id": -1, "text": "-- Backlog Starts Here --", "assignedTo": null, "priority": 5, "isBacklogDivider": true }
 ];
 const categories = [
-  {
-    "code": "ADM",
-    "name": "Admin",
-    "color": "#64748b"
-  },
-  {
-    "code": "INV",
-    "name": "Investigation",
-    "color": "#06b6d4"
-  },
-  {
-    "code": "DEV",
-    "name": "Development",
-    "color": "#14b8a6"
-  },
-  {
-    "code": "DOC",
-    "name": "Documentation",
-    "color": "#6366f1"
-  },
-  {
-    "code": "VAV",
-    "name": "V&V",
-    "color": "#ef4444"
-  },
-  {
-    "code": "OEM",
-    "name": "OEM / Vendor",
-    "color": "#8b5cf6"
-  },
-  {
-    "code": "SYS",
-    "name": "Systems",
-    "color": "#0ea5e9"
-  },
-  {
-    "code": "HDW",
-    "name": "Hardware",
-    "color": "#f59e0b"
-  },
-  {
-    "code": "ANT",
-    "name": "ANOTHER",
-    "color": "#84cc16"
-  }
+  { "code": "ADM", "name": "Admin", "color": "#64748b" },
+  { "code": "INV", "name": "Investigation", "color": "#06b6d4" },
+  { "code": "TST", "name": "test - debug cat", "color": "#22c55e" }
 ];
 </script>
 <!-- end data -->

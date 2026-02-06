@@ -2,8 +2,45 @@
 let milestoneMap = {};
 let categoryMap = {};
 
+function upgradeAllocationOptionsInPlace() {
+  if (!Array.isArray(allocationOptions)) return;
+  for (let i = 0; i < allocationOptions.length; i++) {
+    if (typeof allocationOptions[i] === "string") {
+      allocationOptions[i] = { name: allocationOptions[i], type: "" };
+    }
+  }
+}
+
+function getAllocationName(opt) {
+  if (typeof opt === "string") return opt;
+  return (opt && typeof opt.name === "string") ? opt.name : "";
+}
+
+function getAllocationType(opt) {
+  if (opt && typeof opt === "object" && typeof opt.type === "string") return opt.type.trim();
+  return "";
+}
+
+function hasAllocationName(name) {
+  return allocationOptions.some(o => getAllocationName(o) === name);
+}
+
+function removeAllocationByName(name) {
+  const idx = allocationOptions.findIndex(o => getAllocationName(o) === name);
+  if (idx >= 0) allocationOptions.splice(idx, 1);
+}
+
+function allocationSlug(name) {
+  return String(name)
+    .toLowerCase()
+    .replaceAll(" ", "-")
+    .replaceAll("(", "")
+    .replaceAll(")", "")
+    .replaceAll(":", "");
+}
+
 function clearRenderedElements(){
-  $("#milestoneList, #allocationOptionSections, #unallocated .task-list, #saveDate, #menuAllocationOptions, #logo, #byLine, #pageTitle, #taskPriority .task-priority-list").html("");
+  $("#milestoneList, #allocationOptionSections, #unallocated .task-list, #saveDate, #menuAllocationOptions, #logo, #byLine, #pageTitle").html("");
   $(".count").html("");
   $("#confirmModalTitle, #taskEditModal .itemName, #taskMilestone, #completedTasks .completed-list").html("");
   $(".tsk-milestone, #existingCategoriesList, #existingAllocationsList, #taskCategory, .tsk-category, #taskAssigned, .active-filter-summary").empty();
@@ -35,11 +72,13 @@ function render() {
   renderMilestones();
   renderMilestoneDropdowns();
   renderCategoryDropdowns(); 
-  renderTaskPriorityList()
   renderAllocationOptionSections();
-  renderUnallocatedTasks();
-  enableDragging();
-  makeTaskTitlesAndDatesEditable();
+  renderUnallocatedTasks();  
+  updateTaskAllocationsTotalCount();
+  if (!renderReadOnly){
+    enableDragging();
+    makeTaskTitlesAndDatesEditable();
+  }
   renderCompletedTasks();
   updateCategoryList();
   updateAllocationList();
@@ -47,6 +86,22 @@ function render() {
   $('.active-filter-summary').text(getActiveFilterString());
 
   $main.scrollTop(scrollTop); // restore
+
+  if (renderReadOnly){
+
+    $("#saveButton").parent().hide();
+    $("#manageAllocations, #manageCategories").hide();    
+    $("#milestones div[role=group] input, #milestones div[role=group] button").prop('disabled', true);
+    $(".delete-milestone").hide();
+    $("#addMilestone, .addTask").parent().hide();    
+    $("p.guidance").hide();
+    $("span.delete").parent().hide();
+    $("#read-only-banner").show();
+    
+  } else { // NOT NEEDED AS SAVE ISN'T HAPPENING IF IN READ ONLY... SAVED WILL ALWAYS BE EDITABLE...
+  }
+
+
 }
 
 function renderMilestones() {
@@ -56,7 +111,12 @@ function renderMilestones() {
 
   milestones
     .slice()
-    .sort((a, b) => new Date(a.date) - new Date(b.date))
+    .sort((a, b) => {
+      if (!a.date && !b.date) return 0;
+      if (!a.date) return 1;      // undated milestones last
+      if (!b.date) return -1;
+      return new Date(a.date) - new Date(b.date);
+    })
     .forEach(ms => {
       const group = document.createElement("div");
       group.setAttribute("role", "group");
@@ -68,14 +128,23 @@ function renderMilestones() {
       nameInput.dataset.milestoneid = ms.id;
       group.appendChild(nameInput);
 
-      const used = tasks.some(t => t.milestoneId === ms.id);
-      if (!used) {
+      // Compute linked usage and completion
+      const linked = tasks.filter(t => t.milestoneId === ms.id);
+      const used = linked.length > 0;
+      const allComplete = used && linked.every(t => t.completed === true);
+
+      // Show delete if:
+      //  A) milestone is unused (as today), OR
+      //  B) all linked tasks are completed (new behavior)
+      if (!used || allComplete) {
         const btn = document.createElement("button");
         btn.textContent = "×";
-        btn.className = "danger";
-        btn.title = "Delete milestone";
-        btn.className = 'danger delete-milestone';
+        btn.className = "danger delete-milestone";
+        btn.title = !used
+          ? "Delete milestone"
+          : "Delete milestone (all linked tasks are complete: set their due date to the milestone date, de-link, then delete)";
         btn.dataset.milestoneid = ms.id;
+        btn.dataset.mode = (!used ? "unused" : "all-complete"); // we’ll branch on this later
         group.appendChild(btn);
       }
 
@@ -84,8 +153,10 @@ function renderMilestones() {
       dateInput.value = ms.date;
       dateInput.className = "ms-date";
       dateInput.dataset.milestoneid = ms.id;
-      if (ms.date && isPastDate(ms.date)) dateInput.classList.add("late");
-      else if (isSoon(ms.date)) dateInput.classList.add("soon");
+      if (ms.date) {
+        if (isPastDate(ms.date)) dateInput.classList.add("late");
+        else if (isSoon(ms.date)) dateInput.classList.add("soon");
+      }
       group.appendChild(dateInput);   
       
       const tentativeBtn = document.createElement("button");
@@ -104,6 +175,28 @@ function renderMilestones() {
   $("#ms-count").html(`(${milestones.length})`)
 
   container.appendChild(frag);
+}
+
+function deleteMilestoneWhenAllComplete(msId) {
+  const ms = getMilestoneById(msId);
+  if (!ms) return;
+
+  // For every task linked to this milestone, set a direct due date and unlink
+  tasks
+    .filter(t => t.milestoneId === msId)
+    .forEach(t => {
+      t.due = ms.date;     // preserve the milestone date on the task
+      t.milestoneId = null;
+    });
+
+  // Now call your existing function to actually remove the milestone
+  // (Assumes deleteMilestone(msId) removes from `milestones` and then re-renders/saves, as it does today)
+  deleteMilestone(msId);
+
+  // Optional: a friendlier toast if your deleteMilestone doesn’t already show one
+  if (typeof showToast === 'function') {
+    showToast("Milestone deleted and completed tasks relinked to its date.", "success");
+  }
 }
 
 const BACKLOG_MARKER_ID = -1; // Reserved ID
@@ -131,7 +224,9 @@ function renderMilestoneDropdowns() {
       .forEach(ms => {
         const opt = document.createElement("option");
         opt.value = ms.id;
-        opt.textContent = `${ms.name} (${ms.date})`;
+        opt.textContent = ms.date
+          ? `${ms.name} (${ms.date})`
+          : `${ms.name} (no date)`;
         if (opt.value === currentValue) opt.selected = true;
         select.appendChild(opt);
       });
@@ -172,26 +267,6 @@ function getMilestoneById(id) {
   return milestoneMap[id] || null;
 }
 
-function renderTaskPriorityList() {
-  const container = document.querySelector("#taskPriority .task-priority-list");
-  container.innerHTML = "";
-  const frag = document.createDocumentFragment();
-
-  tasks
-    .filter(t => !t.completed)
-    .filter(matchesActiveFilters)
-    .slice()
-    .sort((a, b) => (a.priority ?? 9999) - (b.priority ?? 9999))
-    .forEach(task => {
-      frag.appendChild(createTaskElement(task)[0]);
-    });
-  
-  container.appendChild(frag);
-  
-  $("#tasks-priority-count").html(`(${tasks.filter(t => !t.completed).filter(matchesActiveFilters).filter(t => (t.id !== BACKLOG_MARKER_ID)).length})`)
-
-}
-
 // Helper: ensure dropzones exist on empty sides of the backlog divider
 function ensureBacklogDropzones(containerEl) {
   // remove any old dropzones to avoid duplicates
@@ -225,6 +300,19 @@ function ensureBacklogDropzones(containerEl) {
   }
 }
 
+function updateTaskAllocationsTotalCount() {
+  // total "not done" count for the whole Task Allocations section
+  // - respects active filters
+  // - excludes divider
+  // - excludes completed
+  const total = tasks
+    .filter(matchesActiveFilters)
+    .filter(t => t.id !== BACKLOG_MARKER_ID)
+    .filter(t => !t.completed)
+    .length;
+
+  $("#tasks-count").html(`(${total})`);
+}
 
 function renderAllocationOptionSections() {
   const section = document.getElementById("allocationOptionSections");
@@ -236,27 +324,42 @@ function renderAllocationOptionSections() {
   const menuFrag = document.createDocumentFragment();
 
   allocationOptions.forEach(option => {
-    const optiondiv = document.createElement("div");
-    optiondiv.id = option.toLowerCase().replace(" ","-");
+    const optionName = getAllocationName(option);
+    const optionType = getAllocationType(option);
+
+    const optiondiv = document.createElement("div");    
+    //optiondiv.id = option.toLowerCase().replaceAll(" ","-").replaceAll("(","").replaceAll(")","").replaceAll(":","");
+    optiondiv.id = allocationSlug(optionName);
     optiondiv.className = "option";
-    optiondiv.dataset.option = option;
+    // optiondiv.dataset.option = option;
+    optiondiv.dataset.option = optionName;
     optiondiv.style = "margin-top: 1.5rem;"
 
     const h3 = document.createElement("h3");
     h3.style = "display: inline-block;";
-    h3.textContent = option;
+    // h3.textContent = option;
+    h3.textContent = optionName;
     optiondiv.appendChild(h3);
+
+    if (optionType) {
+      const typeSmall = document.createElement("small");
+      typeSmall.style = "margin-left: .5rem; opacity: .7;";
+      typeSmall.textContent = optionType;
+      optiondiv.appendChild(typeSmall);
+    }
 
     const small = document.createElement("small");
     small.style = "margin: 0 1rem;";
-    small.textContent = `(${tasks.filter(t => (t.assignedTo === option)).filter(matchesActiveFilters).filter(t => (t.id !== BACKLOG_MARKER_ID)).filter(t => !t.completed).length})`;
+    // small.textContent = `(${tasks.filter(t => (t.assignedTo === option)).filter(matchesActiveFilters).filter(t => (t.id !== BACKLOG_MARKER_ID)).filter(t => !t.completed).length})`;
+    small.textContent = `(${tasks.filter(t => (t.assignedTo === optionName)).filter(matchesActiveFilters).filter(t => (t.id !== BACKLOG_MARKER_ID)).filter(t => !t.completed).length})`;
     optiondiv.appendChild(small);
 
     const taskList = document.createElement("div");
     taskList.className = "task-list";
 
     const assignedTasks = tasks
-      .filter(t => (t.assignedTo === option || t.id === BACKLOG_MARKER_ID))
+      //.filter(t => (t.assignedTo === option || t.id === BACKLOG_MARKER_ID))
+      .filter(t => (t.assignedTo === optionName || t.id === BACKLOG_MARKER_ID))
       .filter(matchesActiveFilters)
       .filter(t => !t.completed)
       .sort((a, b) => (a.priority ?? 9999) - (b.priority ?? 9999));
@@ -270,15 +373,18 @@ function renderAllocationOptionSections() {
 
     const $group = $("#addTaskInputs").clone(true, true);
     $group.attr("id", ""); // avoid duplicate IDs
-    $group.find("button").addClass("addTask").attr("data-allocation", option);
+    // $group.find("button").addClass("addTask").attr("data-allocation", option);
+    $group.find("button").addClass("addTask").attr("data-allocation", optionName);     
     $(optiondiv).append($group[0]);
 
     frag.appendChild(optiondiv);
     
     const li = document.createElement("li");
     const a = document.createElement("a");
-    a.href = `#${option.toLowerCase().replace(' ','-')}`;
-    a.textContent = option;
+    // a.href = `#${option.toLowerCase().replaceAll(" ","-").replaceAll("(","").replaceAll(")","").replaceAll(":","")}`;
+    // a.textContent = option;
+    a.href = `#${allocationSlug(optionName)}`;
+    a.textContent = optionName;
     li.appendChild(a);
     menuFrag.appendChild(li);
   });
@@ -301,7 +407,8 @@ function renderUnallocatedTasks() {
   const frag = document.createDocumentFragment();
 
   tasks
-    .filter(t => (t.assignedTo === null || !allocationOptions.includes(t.assignedTo) || t.id === BACKLOG_MARKER_ID))
+    // .filter(t => (t.assignedTo === null || !allocationOptions.includes(t.assignedTo) || t.id === BACKLOG_MARKER_ID))
+    .filter(t => (t.assignedTo === null || !hasAllocationName(t.assignedTo) || t.id === BACKLOG_MARKER_ID))
     .filter(matchesActiveFilters)
     .filter(t => !t.completed)
     .sort((a, b) => (a.priority ?? 9999) - (b.priority ?? 9999))
@@ -312,8 +419,8 @@ function renderUnallocatedTasks() {
   container.appendChild(frag);
   ensureBacklogDropzones(container);
 
-  $("#tasks-allocations-unallocated-count").html(`(${tasks.filter(t => (!allocationOptions.includes(t.assignedTo) || t.assignedTo === null)).filter(matchesActiveFilters).filter(t => (t.id != BACKLOG_MARKER_ID)).filter(t => !t.completed).length})`)
-
+  //$("#tasks-allocations-unallocated-count").html(`(${tasks.filter(t => (!allocationOptions.includes(t.assignedTo) || t.assignedTo === null)).filter(matchesActiveFilters).filter(t => (t.id != BACKLOG_MARKER_ID)).filter(t => !t.completed).length})`)
+  $("#tasks-allocations-unallocated-count").html(`(${tasks.filter(t => (!hasAllocationName(t.assignedTo) || t.assignedTo === null)).filter(matchesActiveFilters).filter(t => (t.id != BACKLOG_MARKER_ID)).filter(t => !t.completed).length})`)
   
 }
 
@@ -388,17 +495,21 @@ function makeTaskTitlesAndDatesEditable() {
     $el.editable({
       touch : true, lineBreaks : false, toggleFontSize : false, closeOnEnter : true,
       callback : function( data ) {
-        if( isValidDate(data.content) ) { 
-          id = parseInt(data.$el.parents('.task').attr("data-itemid"))
-          const task = tasks.find(t => t.id === id);
-          task.due = data.content;
-        }
+        const id = parseInt(data.$el.parents('.task').attr("data-itemid"));
+        const task = tasks.find(t => t.id === id);        
+
         data.$el.removeAttr("data-edit-event");
-        data.$el.removeAttr("style");
-        console.log(`Task date edited to '${data.content}'.`);
+        data.$el.removeAttr("style");    
+
+        if (data.content === "") {
+          task.due = null;
+          console.log(`Task date cleared.`);
+        } else if (isValidDate(data.content)) {
+          task.due = data.content;
+          console.log(`Task date edited to '${data.content}'.`);
+        }    
 
         render();
-
       }
     });
   });
@@ -426,7 +537,8 @@ function rebalanceGroupPrioritiesForDomOrder(optionName, containerEl) {
   // --- Resolve in-group tasks for this allocation option ---
   const inGroup = tasks
     .filter(t => !t.completed)
-    .filter(t => (optionName ? t.assignedTo === optionName : (t.assignedTo === null || !allocationOptions.includes(t.assignedTo))))
+    // .filter(t => (optionName ? t.assignedTo === optionName : (t.assignedTo === null || !allocationOptions.includes(t.assignedTo))))
+    .filter(t => (optionName ? t.assignedTo === optionName : (t.assignedTo === null || !hasAllocationName(t.assignedTo))))
     .filter(t => t.id !== BACKLOG_MARKER_ID);
 
   // Divider priority (fixed boundary)
@@ -531,110 +643,17 @@ function rebalanceGroupPrioritiesForDomOrder(optionName, containerEl) {
     });
   }
 
-
   // Assign above and below independently
   assignSegment(idsAbove, true);
   assignSegment(idsBelow, false);
 }
-
-
-
-// function enableDragging() {
-//   if (window.sortableInstances) {
-//     window.sortableInstances.forEach(s => s.destroy());
-//   }
-//   window.sortableInstances = [];
-
-//   document.querySelectorAll('.task-list').forEach(taskList => {
-//     const sortable = new Sortable(taskList, {
-//       group: 'shared-tasks', // enable cross-list dragging
-//       animation: 150,
-//       onEnd: function (evt) {
-//         const toList = evt.to;
-//         const fromList = evt.from;
-//         const toDivOption = toList.closest('div.option');
-//         const fromDivOption = fromList.closest('div.option');
-//         const toListId = toList?.id;
-
-//         const isTeamList = toListId === "task-priority-holder";
-//         const newAssignedTo = toDivOption?.dataset.option || null;
-//         const oldAssignedTo = fromDivOption?.dataset.option || null;
-
-//         const draggedItem = evt.item;
-//         const taskId = parseInt(draggedItem.dataset.itemid);
-//         const task = tasks.find(t => t.id === taskId);
-
-//         if (isTeamList) {
-//           // Recalculate ALL priorities from team list DOM
-//           const newOrder = Array.from(toList.querySelectorAll('.task')).map((el, index) => ({
-//             id: parseInt(el.dataset.itemid),
-//             priority: index
-//           }));
-//           newOrder.forEach(({ id, priority }) => {
-//             const t = tasks.find(tt => tt.id === id);
-//             if (t) t.priority = priority;
-//           });
-//           console.log("Global team priority updated.");
-//         } else {
-//           // Allocation lists
-//           if (task && task.id !== BACKLOG_MARKER_ID) {
-//             task.assignedTo = newAssignedTo;
-//           }
-
-//           // Same-list reorder: only shuffle this list's priorities minimally
-//           const sameList = (newAssignedTo === oldAssignedTo);
-//           if (sameList) {
-//             rebalanceGroupPrioritiesForDomOrder(newAssignedTo, toList);
-//           } else {
-//             // Cross-list move: shuffle BOTH lists using their own existing priority sets
-//             // destination
-//             rebalanceGroupPrioritiesForDomOrder(newAssignedTo, toList);
-//             // source
-//             rebalanceGroupPrioritiesForDomOrder(oldAssignedTo, fromList);
-//           }
-
-//           console.log(`Task ${taskId} (${task?.text}) reassigned to ${newAssignedTo ?? "Unallocated"}`);
-//         }
-
-//         render();
-//       }
-
-
-//     });
-
-//     window.sortableInstances.push(sortable);
-//   });
-// }
 
 function enableDragging() {
   // Tear down old instances if any
   if (window.sortableInstances) window.sortableInstances.forEach(s => s.destroy());
   window.sortableInstances = [];
 
-  // --- A) MASTER PRIORITY LIST: divider allowed to move INSIDE this list only
-  const masterEl = document.querySelector('#taskPriority .task-priority-list');
-  if (masterEl) {
-    const sMaster = new Sortable(masterEl, {
-      group: { name: 'master', pull: false, put: false }, // isolate: no cross-list moves
-      animation: 150,
-      draggable: '.task',  // includes divider on purpose
-      onEnd(evt) {
-        // Recompute global priority strictly from master DOM order
-        const newOrder = Array.from(masterEl.querySelectorAll('.task')).map((el, index) => ({
-          id: Number(el.dataset.itemid),
-          priority: index
-        }));
-        newOrder.forEach(({ id, priority }) => {
-          const t = tasks.find(tt => tt.id === id);
-          if (t) t.priority = priority;
-        });
-        render();
-      }
-    });
-    window.sortableInstances.push(sMaster);
-  }
-
-  // --- B) ALLOCATION LISTS (team buckets + Unallocated): divider is NOT draggable
+  // ALLOCATION LISTS (team buckets + Unallocated): divider is NOT draggable
   document.querySelectorAll('#allocationOptionSections .task-list, #unallocated .task-list')
     .forEach(taskList => {
       const sAlloc = new Sortable(taskList, {
@@ -694,7 +713,6 @@ function enableDragging() {
       window.sortableInstances.push(sAlloc);
     });
 }
-
 
 function showToast(message, type = "success", duration = 3000) {
   const container = document.getElementById("toast-container");
@@ -778,11 +796,14 @@ function createTaskElement(task) {
     }
     $due.addClass("dateDriven")
   }
+  else {
+      dueText = (`<small style="color: var(--pico-muted-color);" class="perpetual"><em>N/A</em></small>`);
+  }
   $due.html(`${dueText}`);
 
   if (!task.completed){
     if (dueDate && isPastDate(dueDate)) { $task.addClass("late"); } 
-    else if (isSoon(dueDate)){ $task.addClass("soon"); }
+    else if (dueDate && isSoon(dueDate)){ $task.addClass("soon"); }
   }
   
   if (task.category) {
@@ -953,25 +974,28 @@ function el(tag, text, ...children) {
 }
 
 function formatTaskHTML(task) {
-  const li = document.createElement("li");
-  let text = task.text;
-  const parts = [];
 
-  if (task.due) parts.push(`Due: ${task.due}`);
+  const li = document.createElement("li");
+  let text = "";
+  
+  if (task.category) text += `${task.category} | `;
+  text += `${task.text} | `;
+  
+  if (task.due) text += `Due: ${task.due} | `;
   else if (task.milestoneId) {
     const ms = milestoneMap[task.milestoneId];
-    if (ms) parts.push(`Milestone: ${ms.name} (${ms.date})`);
+    if (ms)  text += `Milestone: ${ms.name} (${ms.date}) | `;
   }
-
-  if (task.category) parts.push(`Category: ${task.category}`);
+  else {
+    text += `No due date | `;
+  }
 
   const links = [];
   if (task["link-jira"]) links.push(linkTag(task["link-jira"], "JIRA"));
   if (task["link-conf"]) links.push(linkTag(task["link-conf"], "Confluence"));
   if (task["link-other"]) links.push(linkTag(task["link-other"], "Other"));
 
-  if (parts.length > 0) text += ` (${parts.join(", ")})`;
-
+  
   li.textContent = text;
   if (links.length > 0) {
     links.forEach(link => {
@@ -1031,15 +1055,18 @@ function exportHTMLSummary() {
   // Allocations
   div.appendChild(el("h2", "Allocations"));
   allocationOptions.forEach(option => {
+    const optionName = getAllocationName(option);
     const assigned = tasks
-      .filter(t => t.assignedTo === option && !t.completed)
+      // .filter(t => t.assignedTo === option && !t.completed)
+      .filter(t => t.assignedTo === optionName && !t.completed)
       .filter(matchesActiveFilters)
       .sort((a, b) => (a.priority ?? 9999) - (b.priority ?? 9999));
 
     const active = assigned.filter(t => t.priority < sorted[dividerIndex]?.priority);
     const backlog = assigned.filter(t => t.priority > sorted[dividerIndex]?.priority);
 
-    div.appendChild(el("h3", option));
+    // div.appendChild(el("h3", option));
+    div.appendChild(el("h3", optionName));
 
     if (active.length === 0 && backlog.length === 0) {
       div.appendChild(el("p", "(No tasks)"));
@@ -1102,27 +1129,56 @@ function exportHTMLSummary() {
 }
 
 function updateAllocationList() {
+  
   const $list = $('#existingAllocationsList');
   $list.empty();
 
-  allocationOptions.forEach(option => {
-    const inUse = tasks.some(t => t.assignedTo === option);
-    const $li = $('<li>').text(option);
+  upgradeAllocationOptionsInPlace();
+
+  allocationOptions.forEach(opt => {
+    const name = getAllocationName(opt);
+    const type = getAllocationType(opt);
+    const inUse = tasks.some(t => t.assignedTo === name);
+
+    const $li = $('<li>').css({
+      display: 'grid',
+      gridTemplateColumns: '1fr 1fr auto auto',
+      gap: '.5rem',
+      alignItems: 'center',
+      padding: '.25rem 0'
+    });
+
+    const $name = $('<input type="text">')
+      .addClass('alloc-edit-name')
+      .val(name);
+
+    const $type = $('<input type="text">')
+      .addClass('alloc-edit-type')
+      .attr('placeholder', 'Type (optional)')
+      .val(type);
+
+    const $save = $('<button type="button">')
+      .addClass('small save-allocation')
+      .text('Save')
+      .attr('data-old', name);
+
+    $li.append($name, $type, $save);
 
     if (!inUse) {
-      const $del = $('<button>')
-        .text("×")
-        .css({"display": "inline-block", "width": "3rem", "margin-left": '1rem'})
-        .addClass("small danger del-allocation")        
-        .attr('data-option', option)
-
+      const $del = $('<button type="button">')
+        .addClass('small danger del-allocation')
+        .css({ width: '3rem' })
+        .text('×')
+        .attr('title', 'Remove allocation')
+        .attr('data-option', name);
       $li.append($del);
     } else {
-      $li.append(" (in use)");
+      $li.append($('<small>').css({ opacity: 0.7 }).text('in use'));
     }
 
     $list.append($li);
   });
+
 }
 
 function updateCategoryList() {
@@ -1173,7 +1229,6 @@ function updateCategoryList() {
     $list.append($li);
   });
 }
-
 
 let hasUnsavedChanges = false;
 
@@ -1327,10 +1382,11 @@ function buildFiltersModalUI() {
       .map(m => {
         const id = `f-ms-${m.id}`;
         const tent = m.tentative ? ' <small class="tentative">(tentative)</small>' : '';
+        const dateSmall = m.date ? ` <small>(${m.date})</small>` : ' <small>(no date)</small>';
         return `
           <label style="display:flex; gap:.5rem; align-items:center;">
             <input type="checkbox" id="${id}" data-filter-type="milestone" value="${m.id}" ${activeFilters.milestones.has(String(m.id)) ? 'checked' : ''}>
-            <span>${m.name} <small>(${m.date})</small>${tent}</span>
+            <span>${m.name}${dateSmall}${tent}</span>
           </label>`;
       })
   ].join('');
@@ -1372,7 +1428,6 @@ $(document).ready(function () {
     $("#filtersModalBody").html("");
     clearRenderedElements();
     $("#milestones details").prop("open", false);
-    $("#taskPriority details").prop("open", false);
     $("#allocate details").prop("open", true);
     $("#completedTasks details").prop("open", false);
     $(".toast").removeClass("show");
@@ -1383,6 +1438,7 @@ $(document).ready(function () {
       `\nsaveDate = "${nowString()}";` + 
       `\npageTitle = "${pageTitle}";` + 
       `\nbyLine = "${byLine}";` + 
+      `\rrenderReadOnly = ${renderReadOnly};` + 
       `\nlogo = \`${logo}\`;` + 
       `\nconst allocationOptions = ${JSON.stringify(allocationOptions, null, 2)};` + 
       `\nconst milestones = ${JSON.stringify(milestones, null, 2)};` + 
@@ -1486,13 +1542,14 @@ $(document).ready(function () {
     const milestoneId = milestoneIdRaw ? parseInt(milestoneIdRaw) : null;
     const category = $('#taskCategory').val().trim() || null;    
 
-    if (!name || (!due && !milestoneId)) {
-      showAlertModal("Please enter a task name and either a due date or a milestone.", "Task Update");
+    if (!name) {
+      showAlertModal("Please enter a task name.", "Task Update");
       return;
     }
 
     task.text = name;
     task.due = milestoneId ? null : due; // If milestone selected, clear due date
+    if (task.due === "") { task.due = null; }
     task.milestoneId = milestoneId;
     task.category = category;
 
@@ -1536,8 +1593,8 @@ $(document).ready(function () {
     const name = nameInput.value.trim();
     const date = dateInput.value;
 
-    if (!name || !date) {
-      showAlertModal("Please enter both a name and a date for the milestone.", "Milestone Creation");
+    if (!name) {
+      showAlertModal("Please enter a name for the milestone.", "Milestone Creation");
       return;
     }
 
@@ -1565,8 +1622,8 @@ $(document).ready(function () {
     const date = dateInput?.value || null;
     const category = categorySelect?.value || null;
 
-    if (!name || (!date && !milestoneId)) {
-      showAlertModal("Please enter a name and either a due date or a milestone.", "Task Creation");
+    if (!name) {
+      showAlertModal("Please enter a name.", "Task Creation");
       return;
     }
 
@@ -1665,9 +1722,14 @@ $(document).ready(function () {
       // Populate Allocated To
       const $assigned = $("#taskAssigned");
       $assigned.empty().append(`<option value="">Unallocated</option>`);
+      // allocationOptions.forEach(opt => {
       allocationOptions.forEach(opt => {
+        const name = getAllocationName(opt);
+        const type = getAllocationType(opt);
+        const label = type ? `${name} — ${type}` : name;
         $assigned.append(
-          `<option value="${opt}" ${task.assignedTo === opt ? "selected" : ""}>${opt}</option>`
+          // `<option value="${opt}" ${task.assignedTo === opt ? "selected" : ""}>${opt}</option>`
+          `<option value="${name}" ${task.assignedTo === name ? "selected" : ""}>${label}</option>`
         );
       });
 
@@ -1698,9 +1760,49 @@ $(document).ready(function () {
   $root
   .off('click.app', '#existingAllocationsList .del-allocation')
   .on('click.app', '#existingAllocationsList .del-allocation', function () {
-    const option = $(this).data('option');
-    allocationOptions.splice(allocationOptions.indexOf(option), 1);
+    // const option = $(this).data('option');
+    // removeAllocationByName(option);
+    const option = $(this).data('option') || $(this).attr('data-option');
+    upgradeAllocationOptionsInPlace();
+    removeAllocationByName(option);
     console.log(`Allocation option '${option}' removed.`);
+    markUnsavedChanges();
+    render();
+    updateAllocationList();
+  });
+
+  $root
+  .off('click.app', '#existingAllocationsList .save-allocation')
+  .on('click.app', '#existingAllocationsList .save-allocation', function () {
+    const oldName = $(this).data('old') || $(this).attr('data-old');
+    const $li = $(this).closest('li');
+    const newName = ($li.find('.alloc-edit-name').val() || '').trim();
+    const newType = ($li.find('.alloc-edit-type').val() || '').trim();
+
+    if (!newName) {
+      showAlertModal("Name cannot be empty.", "Allocation Management");
+      return;
+    }
+
+    upgradeAllocationOptionsInPlace();
+
+    // Prevent duplicates if renaming
+    if (newName !== oldName && hasAllocationName(newName)) {
+      showAlertModal("That allocation name already exists.", "Allocation Management");
+      return;
+    }
+
+    const idx = allocationOptions.findIndex(o => getAllocationName(o) === oldName);
+    if (idx < 0) return;
+
+    allocationOptions[idx].name = newName;
+    allocationOptions[idx].type = newType;
+
+    // If renamed, update tasks assignedTo
+    if (newName !== oldName) {
+      renameAllocationEverywhere(oldName, newName);
+    }
+
     markUnsavedChanges();
     render();
     updateAllocationList();
@@ -1709,8 +1811,17 @@ $(document).ready(function () {
   $root
   .off('click.app', '.delete-milestone')
   .on('click.app', '.delete-milestone', function () {
-    deleteMilestone(parseInt(this.dataset.milestoneid, 10));
+    const msId = Number($(this).data("milestoneid"));
+    const mode = String($(this).data("mode") || "unused");
+
+    if (mode === "all-complete") {
+      deleteMilestoneWhenAllComplete(msId);
+    } else {
+      // Reuse your existing path
+      deleteMilestone(msId);
+    }
   });
+
 
   $root
   .off('click.app', '.tentative-btn')
@@ -1750,7 +1861,8 @@ $(document).ready(function () {
   $root
   .off('click.app', '#manageAllocations')
   .on('click.app', '#manageAllocations', function () {    
-    // updateAllocationList();
+    upgradeAllocationOptionsInPlace();
+    updateAllocationList();
     $('#allocationModal')[0].showModal();
   });
 
@@ -1764,20 +1876,23 @@ $(document).ready(function () {
   .off('click.app', '#addAllocationOption')
   .on('click.app', '#addAllocationOption', function () {
     const newName = $('#newAllocationInput').val().trim();
+    const newType = ($('#newAllocationTypeInput').val() || '').trim();
     if (!newName) return;
 
-    if (!allocationOptions.includes(newName)) {
-      allocationOptions.push(newName);
-      $('#newAllocationInput').val('');
-      console.log(`Allocation option '${newName}' added.`);
-      markUnsavedChanges();
-      render();
-      updateAllocationList();
-    } else {
-      showAlertModal("That allocation already exists.", "Allocation Management");
-    }
-  });
+    upgradeAllocationOptionsInPlace();
 
+    if (hasAllocationName(newName)) {
+      showAlertModal("That allocation already exists.", "Allocation Management");
+      return;
+    }
+
+    allocationOptions.push({ name: newName, type: newType });
+    $('#newAllocationInput').val('');
+    $('#newAllocationTypeInput').val('');
+    markUnsavedChanges();
+    render();
+    updateAllocationList();
+  });
 
   $root
   .off('click.app', '#manageCategories')
