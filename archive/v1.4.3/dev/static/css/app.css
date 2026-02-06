@@ -1,0 +1,155 @@
+
+    /* APP.CSS */
+    :root {
+      --pico-form-element-spacing-vertical: 0.25rem;
+      --pico-form-element-spacing-horizontal: 0.75rem;
+      --pico-spacing: 0.75rem;
+      --pico-font-size: 100%;
+    }
+
+    .sticky-top { position: sticky; top: 0; z-index: 9999; }
+    
+    main > article { margin: var(--pico-block-spacing-vertical) 0; }
+
+    #milestoneTimelineHolder { margin: 1rem; }
+    #milestoneTimelineHolder { padding: .5rem .75rem; }
+
+    #taskPriority input[type=date], #milestones input[type=date], #allocate input[type=date] { max-width: 250px;}
+    select.tsk-category, select.tsk-milestone { max-width: 350px;}
+
+    .task-list {min-height: 1.5rem;}
+    .task {
+      display: block;
+      --pico-background-color: var(--pico-form-element-background-color);
+      --pico-border-color: var(--pico-form-element-border-color);
+      --pico-color: var(--pico-form-element-color);
+      --pico-box-shadow: none;      
+      border: var(--pico-border-width) solid var(--pico-form-element-border-color);
+      border-radius: var(--pico-border-radius);
+      outline: 0;
+      background-color: var(--pico-background-color);
+      box-shadow: var(--pico-box-shadow);
+      color: var(--pico-color);
+      font-weight: var(--pico-font-weight);
+      transition: background-color var(--pico-transition), border-color var(--pico-transition), color var(--pico-transition), box-shadow var(--pico-transition);
+      padding: var(--pico-form-element-spacing-vertical) var(--pico-form-element-spacing-horizontal);
+      margin-bottom: calc(var(--pico-spacing)/2);
+      cursor: default;
+    }
+    /* .task.late { border: var(--pico-border-width) solid var(--pico-form-element-invalid-active-border-color); } */
+    .task.late .due { color: var(--pico-form-element-invalid-active-border-color); }
+    /* .task.soon { border: var(--pico-border-width) solid var(--pico-color-pumpkin-500); } */
+    .task.soon .due { color: var(--pico-color-pumpkin-500); }
+    .task span.delete {
+      background: none;
+      border: none;
+      color: var(--pico-form-element-invalid-active-border-color);
+      font-weight: bold;
+      cursor: pointer;
+      float:right; 
+      margin-left: 0.5rem;
+    }
+    .task .complete {
+      background: none;
+      border: none;
+      color: var(--pico-form-element-valid-active-border-color);
+      cursor: pointer;
+    }
+
+    #milestoneList>div>*[disabled] { opacity:1.0 }
+    #milestoneList>div:hover>input { --pico-background-color:var(--pico-form-element-selected-background-color); }
+    .task:nth-child(2n){ --pico-background-color:var(--pico-form-element-active-background-color); }
+    .task:hover { --pico-background-color:var(--pico-form-element-selected-background-color); }
+
+    .milestone-vis-today * { border-color: red; }
+
+    #menuAllocationOptions {margin-bottom: 0}
+
+    
+
+    .completed-task .taskName {
+      opacity: 0.6;
+      text-decoration: line-through;
+    }
+
+    .ms-date.late { color: var(--pico-form-element-invalid-active-border-color); }
+    .ms-date.soon { color: var(--pico-color-pumpkin-500); }
+
+    #milestoneList [role=group] { margin-bottom: calc(var(--pico-spacing)/2) }
+    .right { text-align: right; }
+
+    .category { font-weight: 600; width: 2.5rem; display: inline-block; }
+
+    .assignee { }
+    #allocate .assignee { display: none; }
+
+    .guidance, .active-filter {font-size: 0.9rem; font-style: italic; color: var(--pico-muted-color); }
+
+    details summary::after { height: 2rem; }
+
+    .tentative-btn {
+      border: 1px solid var(--pico-secondary);
+      background: transparent;
+      color: var(--pico-secondary);
+      cursor: pointer;
+    }
+
+    .tentative-btn.active {
+      background: var(--pico-secondary);
+      color: white;
+    }
+
+    .tentative {
+      font-style: italic;
+      opacity: 0.7;
+    }
+
+    #openFilters.active {
+      background-color: var(--pico-del-color, #d9534f); /* fallback red */
+      color: white;
+      border-color: var(--pico-del-color, #d9534f);
+    }
+        
+    .task.backlog-divider {    
+      color: var(--pico-form-element-border-color);
+      background: none;
+      border: none;
+      /* background-color: var(--pico-form-element-border-color); */
+    } 
+    
+    
+    .backlog_divider {
+      display: flex;
+      align-items: center;
+      text-align: center;
+      color: var(--pico-color);      
+      opacity: 0.5;
+    }
+
+    .backlog_divider::before,
+    .backlog_divider::after {
+      content: '';
+      flex: 1;
+      border-bottom: 1px solid var(--pico-color);  
+      opacity: 0.5;
+    }
+
+    .backlog_divider:not(:empty)::before {
+      margin-right: .5em;
+    }
+
+    .backlog_divider:not(:empty)::after {
+      margin-left: .5em;
+    }
+   
+    
+    .backlog-dropzone {
+      height: 2.25rem;
+      margin: calc(var(--pico-spacing) / 2);
+      border: 1px dashed var(--pico-color);  
+      opacity: 0.1;
+      border-radius: 8px;
+      pointer-events: auto; 
+      background: none;
+      text-align: center;
+    }
