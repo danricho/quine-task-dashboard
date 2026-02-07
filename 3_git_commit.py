@@ -191,9 +191,22 @@ def prompt_bump_level() -> str:
         print("Invalid selection. Try again.\n")
 
 
-def prompt_commit_message() -> str:
+def input_with_prefill(prompt: str, text: str) -> str:
+    import readline
+
+    def hook():
+        readline.insert_text(text)
+        readline.redisplay()
+
+    readline.set_pre_input_hook(hook)
+    try:
+        return input(prompt)
+    finally:
+        readline.set_pre_input_hook()
+
+def prompt_commit_message(default: str = "") -> str:
     while True:
-        msg = input("Commit message: ").strip()
+        msg = input_with_prefill("Commit message: ", default).strip()
         if msg:
             return msg
         print("Commit message cannot be empty.\n")
@@ -244,7 +257,7 @@ def main() -> None:
         print(f"Error: tag {next_tag} already exists.", file=sys.stderr)
         sys.exit(5)
 
-    commit_msg = prompt_commit_message()
+    commit_msg = prompt_commit_message(next_tag)
 
     working_tree_clean_or_confirm()
     ensure_something_staged()
@@ -280,7 +293,7 @@ def main() -> None:
 
     print("\nDone.")
     print("You may want to push:")
-    print(f"  git push && git push --tags")
+    print(f"  git push origin master && git push origin --tags")
 
 
 if __name__ == "__main__":
