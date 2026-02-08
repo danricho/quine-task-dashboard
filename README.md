@@ -13,22 +13,23 @@ Coming Soon™
 
 ## Features
 
- - **Milestone Management**: 
+  - **Milestone Management**: 
      - Add/Edit and Remove Milestones with or without (shown as *PERPETUAL*) a key date and indicate whether a date is tentative.
      - Add a link to the milestone. 
- - **Task Management**: 
+  - **Task Management**: 
      - Add/Edit and Remove Tasks with or without (shown as *PERPETUAL*) a key date or link to a milestone to inherite it's date. Indicate whether a task date (direct) is tentative.
      - Add JIRA/Confluence or other (Sharepoint?) links to a task. 
      - Set a category for the task to allow filtering (below) and color indications of shown tasks on the dashboard.
      - Mark tasks as complete (viewable in *Completed Tasks* until deleted... bulk deletion of completed tasks is possible using 'delete before date' feature). 
- - **Resource Managment**: Add/Edit or Remove (unused) Resources.
- - **Category Management**: Add/Edit or Remove (unused) Categories.
- - **Task Allocation**: 
+  - **Resource Managment**: Add/Edit or Remove (unused) Resources.
+  - **Category Management**: Add/Edit or Remove (unused) Categories.
+  - **Task Allocation**: 
     - Allocate or Unallocate tasks to different resources either by editing a task or by drag/dropping tasks between resource lists. 
     - Reordering inside a resource's list allows finer prioritisation and setting of active-vs-backlog status of tasks.
   - **Graphical Timelines**:
     - view milestones with a due date on a graphical timeline.
     - view a resource's allocated tasks on a graphical timeline.
+  - **Soon and Late**: dates that are late or soon are colored to make them stand out.
   - **Task View-Filtering**: filter by Category, Milestone, and text search.
   - **Save & Persist**: this is the Quine functionality which allows downloading of the currently viewed page - whick enables saving over the old version.
   - **Export to Clipbard**: copies a HTML based text version of the data to the clipboard for emails/documents etc.
@@ -38,6 +39,13 @@ Coming Soon™
 
  - **Basecoat UI** & **Tailwind** for component functionality, styling and CSS
  - **jQuery**, **SortableJS** and **d3-milestones** for scripting, drag-drop features and timelines
+
+## Upgrading (v2.0.0 onward)
+
+ 1. Export USERDATA to JSON from old version HTML (>= v2.0.0)
+ 2. Open the new version HTML
+ 3. Import USERDATA from JSON into new version
+ 4. Save the new version (which includes the imported USERDATA)
 
 ## Modifying / Developing 
 
