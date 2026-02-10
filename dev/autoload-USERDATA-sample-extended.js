@@ -1,11 +1,14 @@
-const USERDATA = {
+USERDATA = {
   config: { 
-      title: "Demo Project",
-      logo: `<svg width="2rem" height="2rem" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg"><rect width="64" height="64" rx="10" ry="10" fill="currentColor" opacity="0.12"></rect></svg>`,
-      primary_color: '#3c006e',
-      last_saved: "2026-01-25 09:11",
-      render_read_only: false,
-    },
+    title: "Project - Extended Example Dataset",
+    logo: `<svg width="2rem" height="2rem" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg"><rect width="64" height="64" rx="10" ry="10" fill="currentColor" opacity="0.12"></rect></svg>`,
+    primary_color: '#3c006e',
+    last_saved: "2026-01-25 09:11",
+    render_read_only: false,
+    force_timeline_start: null,
+    force_timeline_end: null,
+    soon_duration: 7, // in days to go
+  },
   resources: [
     {
       "name": "Avery",
@@ -52,12 +55,14 @@ const USERDATA = {
     {
       "id": 10,
       "name": "Kickoff / Charter Approved",
-      "date": "2026-02-03"
+      "date": "2026-02-03",
+      "link": null
     },
     {
       "id": 20,
       "name": "ConOps + Needs Baselined",
-      "date": "2026-02-21"
+      "date": "2026-02-21",
+      "link": "https://confluence.example.com/display/DEMO/Milestone_info_page!"
     },
     {
       "id": 25,
@@ -166,9 +171,9 @@ const USERDATA = {
       "assignedTo": "Casey",
       "priority": 7,
       "category": "ARC",
-      "link-conf": null,
-      "link-jira": "https://jira.example.com/browse/DEMO-1",
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": "https://jira.example.com/browse/DEMO-1",
+      "linkOther": null,
       "completed": false
     },
     {
@@ -180,9 +185,9 @@ const USERDATA = {
       "assignedTo": "Casey",
       "priority": 17,
       "category": "ARC",
-      "link-conf": "https://confluence.example.com/display/DEMO/Page+2",
-      "link-jira": "https://jira.example.com/browse/DEMO-2",
-      "link-other": null,
+      "linkConf": "https://confluence.example.com/display/DEMO/Page+2",
+      "linkJira": "https://jira.example.com/browse/DEMO-2",
+      "linkOther": null,
       "completed": false
     },
     {
@@ -194,9 +199,9 @@ const USERDATA = {
       "assignedTo": "Casey",
       "priority": 6,
       "category": "ARC",
-      "link-conf": "https://confluence.example.com/display/DEMO/Page+3",
-      "link-jira": null,
-      "link-other": "https://example.com/other/3",
+      "linkConf": "https://confluence.example.com/display/DEMO/Page+3",
+      "linkJira": null,
+      "linkOther": "https://example.com/other/3",
       "completed": false
     },
     {
@@ -208,9 +213,9 @@ const USERDATA = {
       "assignedTo": "Casey",
       "priority": 20,
       "category": "DOC",
-      "link-conf": null,
-      "link-jira": null,
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": null,
+      "linkOther": null,
       "completed": "2026-01-29"
     },
     {
@@ -222,9 +227,9 @@ const USERDATA = {
       "assignedTo": "Casey",
       "priority": 8,
       "category": "DOC",
-      "link-conf": null,
-      "link-jira": null,
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": null,
+      "linkOther": null,
       "completed": "2026-02-03"
     },
     {
@@ -236,9 +241,9 @@ const USERDATA = {
       "assignedTo": "Taylor",
       "priority": 13,
       "category": "DEV",
-      "link-conf": null,
-      "link-jira": "https://jira.example.com/browse/DEMO-6",
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": "https://jira.example.com/browse/DEMO-6",
+      "linkOther": null,
       "completed": false
     },
     {
@@ -250,9 +255,9 @@ const USERDATA = {
       "assignedTo": "Taylor",
       "priority": 10,
       "category": "DEV",
-      "link-conf": null,
-      "link-jira": "https://jira.example.com/browse/DEMO-7",
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": "https://jira.example.com/browse/DEMO-7",
+      "linkOther": null,
       "completed": false
     },
     {
@@ -264,9 +269,9 @@ const USERDATA = {
       "assignedTo": "Taylor",
       "priority": 11,
       "category": "DEV",
-      "link-conf": "https://confluence.example.com/display/DEMO/Page+8",
-      "link-jira": null,
-      "link-other": null,
+      "linkConf": "https://confluence.example.com/display/DEMO/Page+8",
+      "linkJira": null,
+      "linkOther": null,
       "completed": false
     },
     {
@@ -278,9 +283,9 @@ const USERDATA = {
       "assignedTo": "Taylor",
       "priority": 17,
       "category": "DEV",
-      "link-conf": null,
-      "link-jira": null,
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": null,
+      "linkOther": null,
       "completed": false
     },
     {
@@ -292,9 +297,9 @@ const USERDATA = {
       "assignedTo": "Blake",
       "priority": 9,
       "category": "OPS",
-      "link-conf": "https://confluence.example.com/display/DEMO/Page+10",
-      "link-jira": null,
-      "link-other": "https://example.com/other/10",
+      "linkConf": "https://confluence.example.com/display/DEMO/Page+10",
+      "linkJira": null,
+      "linkOther": "https://example.com/other/10",
       "completed": false
     },
     {
@@ -306,9 +311,9 @@ const USERDATA = {
       "assignedTo": "Avery",
       "priority": 18,
       "category": "PMA",
-      "link-conf": null,
-      "link-jira": null,
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": null,
+      "linkOther": null,
       "completed": false
     },
     {
@@ -320,9 +325,9 @@ const USERDATA = {
       "assignedTo": "Avery",
       "priority": 9,
       "category": "DOC",
-      "link-conf": "https://confluence.example.com/display/DEMO/Page+12",
-      "link-jira": "https://jira.example.com/browse/DEMO-12",
-      "link-other": null,
+      "linkConf": "https://confluence.example.com/display/DEMO/Page+12",
+      "linkJira": "https://jira.example.com/browse/DEMO-12",
+      "linkOther": null,
       "completed": "2026-01-19"
     },
     {
@@ -334,9 +339,9 @@ const USERDATA = {
       "assignedTo": "Avery",
       "priority": 12,
       "category": "PMA",
-      "link-conf": null,
-      "link-jira": null,
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": null,
+      "linkOther": null,
       "completed": "2026-02-03"
     },
     {
@@ -348,9 +353,9 @@ const USERDATA = {
       "assignedTo": "Avery",
       "priority": 11,
       "category": "REQ",
-      "link-conf": null,
-      "link-jira": null,
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": null,
+      "linkOther": null,
       "completed": "2026-01-17"
     },
     {
@@ -362,9 +367,9 @@ const USERDATA = {
       "assignedTo": "Blake",
       "priority": 20,
       "category": "REQ",
-      "link-conf": null,
-      "link-jira": null,
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": null,
+      "linkOther": null,
       "completed": "2026-01-03"
     },
     {
@@ -376,9 +381,9 @@ const USERDATA = {
       "assignedTo": "Avery",
       "priority": 7,
       "category": "ARC",
-      "link-conf": "https://confluence.example.com/display/DEMO/Page+16",
-      "link-jira": null,
-      "link-other": null,
+      "linkConf": "https://confluence.example.com/display/DEMO/Page+16",
+      "linkJira": null,
+      "linkOther": null,
       "completed": "2026-01-29"
     },
     {
@@ -390,9 +395,9 @@ const USERDATA = {
       "assignedTo": "Blake",
       "priority": 20,
       "category": "ARC",
-      "link-conf": "https://confluence.example.com/display/DEMO/Page+17",
-      "link-jira": null,
-      "link-other": null,
+      "linkConf": "https://confluence.example.com/display/DEMO/Page+17",
+      "linkJira": null,
+      "linkOther": null,
       "completed": "2026-01-17"
     },
     {
@@ -404,9 +409,9 @@ const USERDATA = {
       "assignedTo": "Avery",
       "priority": 1,
       "category": "DOC",
-      "link-conf": null,
-      "link-jira": null,
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": null,
+      "linkOther": null,
       "completed": "2026-02-02"
     },
     {
@@ -418,9 +423,9 @@ const USERDATA = {
       "assignedTo": "Morgan",
       "priority": 8,
       "category": "OPS",
-      "link-conf": null,
-      "link-jira": "https://jira.example.com/browse/DEMO-19",
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": "https://jira.example.com/browse/DEMO-19",
+      "linkOther": null,
       "completed": false
     },
     {
@@ -432,9 +437,9 @@ const USERDATA = {
       "assignedTo": "Riley, M",
       "priority": 10,
       "category": "TST",
-      "link-conf": "https://confluence.example.com/display/DEMO/Page+20",
-      "link-jira": null,
-      "link-other": null,
+      "linkConf": "https://confluence.example.com/display/DEMO/Page+20",
+      "linkJira": null,
+      "linkOther": null,
       "completed": false
     },
     {
@@ -446,9 +451,9 @@ const USERDATA = {
       "assignedTo": "Riley, M",
       "priority": 20,
       "category": "TST",
-      "link-conf": null,
-      "link-jira": null,
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": null,
+      "linkOther": null,
       "completed": "2026-01-27"
     },
     {
@@ -460,9 +465,9 @@ const USERDATA = {
       "assignedTo": "Morgan",
       "priority": 17,
       "category": "OPS",
-      "link-conf": null,
-      "link-jira": null,
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": null,
+      "linkOther": null,
       "completed": false
     },
     {
@@ -474,9 +479,9 @@ const USERDATA = {
       "assignedTo": "Blake",
       "priority": 18,
       "category": "DOC",
-      "link-conf": null,
-      "link-jira": null,
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": null,
+      "linkOther": null,
       "completed": "2026-01-26"
     },
     {
@@ -488,9 +493,9 @@ const USERDATA = {
       "assignedTo": "Avery",
       "priority": 16,
       "category": "PMA",
-      "link-conf": null,
-      "link-jira": null,
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": null,
+      "linkOther": null,
       "completed": "2026-01-24"
     },
     {
@@ -502,9 +507,9 @@ const USERDATA = {
       "assignedTo": "Blake",
       "priority": 4,
       "category": "OPS",
-      "link-conf": null,
-      "link-jira": null,
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": null,
+      "linkOther": null,
       "completed": false
     },
     {
@@ -516,9 +521,9 @@ const USERDATA = {
       "assignedTo": null,
       "priority": 2,
       "category": "ARC",
-      "link-conf": null,
-      "link-jira": null,
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": null,
+      "linkOther": null,
       "completed": false
     },
     {
@@ -530,9 +535,9 @@ const USERDATA = {
       "assignedTo": "Blake",
       "priority": 0,
       "category": "OPS",
-      "link-conf": null,
-      "link-jira": null,
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": null,
+      "linkOther": null,
       "completed": "2026-01-28"
     },
     {
@@ -544,9 +549,9 @@ const USERDATA = {
       "assignedTo": "Avery",
       "priority": 3,
       "category": "PMA",
-      "link-conf": null,
-      "link-jira": null,
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": null,
+      "linkOther": null,
       "completed": false
     },
     {
@@ -558,9 +563,9 @@ const USERDATA = {
       "assignedTo": null,
       "priority": 20,
       "category": "TST",
-      "link-conf": null,
-      "link-jira": null,
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": null,
+      "linkOther": null,
       "completed": false
     },
     {
@@ -572,9 +577,9 @@ const USERDATA = {
       "assignedTo": "Avery",
       "priority": 0,
       "category": null,
-      "link-conf": null,
-      "link-jira": null,
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": null,
+      "linkOther": null,
       "completed": false
     },
     {
@@ -586,9 +591,9 @@ const USERDATA = {
       "assignedTo": "Avery",
       "priority": 15,
       "category": null,
-      "link-conf": null,
-      "link-jira": null,
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": null,
+      "linkOther": null,
       "completed": "2026-01-29"
     },
     {
@@ -600,9 +605,9 @@ const USERDATA = {
       "assignedTo": "Morgan",
       "priority": 17,
       "category": "TST",
-      "link-conf": null,
-      "link-jira": null,
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": null,
+      "linkOther": null,
       "completed": false
     },
     {
@@ -614,9 +619,9 @@ const USERDATA = {
       "assignedTo": "Riley, M",
       "priority": 0,
       "category": "DAT",
-      "link-conf": null,
-      "link-jira": null,
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": null,
+      "linkOther": null,
       "completed": "2026-01-23"
     },
     {
@@ -628,9 +633,9 @@ const USERDATA = {
       "assignedTo": "SW Team Orion",
       "priority": 15,
       "category": "DOC",
-      "link-conf": "https://confluence.example.com/display/DEMO/Page+34",
-      "link-jira": "https://jira.example.com/browse/DEMO-34",
-      "link-other": null,
+      "linkConf": "https://confluence.example.com/display/DEMO/Page+34",
+      "linkJira": "https://jira.example.com/browse/DEMO-34",
+      "linkOther": null,
       "completed": false
     },
     {
@@ -642,9 +647,9 @@ const USERDATA = {
       "assignedTo": "Morgan",
       "priority": 8,
       "category": "DEV",
-      "link-conf": null,
-      "link-jira": "https://jira.example.com/browse/DEMO-35",
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": "https://jira.example.com/browse/DEMO-35",
+      "linkOther": null,
       "completed": "2026-01-25"
     },
     {
@@ -656,9 +661,9 @@ const USERDATA = {
       "assignedTo": "Avery",
       "priority": 0,
       "category": "DAT",
-      "link-conf": null,
-      "link-jira": null,
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": null,
+      "linkOther": null,
       "completed": false
     },
     {
@@ -670,9 +675,9 @@ const USERDATA = {
       "assignedTo": null,
       "priority": 16,
       "category": "DEV",
-      "link-conf": null,
-      "link-jira": "https://jira.example.com/browse/DEMO-37",
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": "https://jira.example.com/browse/DEMO-37",
+      "linkOther": null,
       "completed": "2026-02-02"
     },
     {
@@ -684,9 +689,9 @@ const USERDATA = {
       "assignedTo": "Sam",
       "priority": 18,
       "category": "ARC",
-      "link-conf": null,
-      "link-jira": null,
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": null,
+      "linkOther": null,
       "completed": "2026-01-05"
     },
     {
@@ -698,9 +703,9 @@ const USERDATA = {
       "assignedTo": "Blake",
       "priority": 16,
       "category": "OPS",
-      "link-conf": null,
-      "link-jira": null,
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": null,
+      "linkOther": null,
       "completed": "2026-01-27"
     },
     {
@@ -712,9 +717,9 @@ const USERDATA = {
       "assignedTo": "Blake",
       "priority": 4,
       "category": "DOC",
-      "link-conf": null,
-      "link-jira": null,
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": null,
+      "linkOther": null,
       "completed": "2026-01-12"
     },
     {
@@ -726,9 +731,9 @@ const USERDATA = {
       "assignedTo": "Avery",
       "priority": 24,
       "category": "TST",
-      "link-conf": null,
-      "link-jira": "https://jira.example.com/browse/DEMO-41",
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": "https://jira.example.com/browse/DEMO-41",
+      "linkOther": null,
       "completed": false
     },
     {
@@ -740,9 +745,9 @@ const USERDATA = {
       "assignedTo": "Morgan",
       "priority": 1,
       "category": "DEV",
-      "link-conf": null,
-      "link-jira": null,
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": null,
+      "linkOther": null,
       "completed": false
     },
     {
@@ -754,9 +759,9 @@ const USERDATA = {
       "assignedTo": "Morgan",
       "priority": 28,
       "category": "DOC",
-      "link-conf": "https://confluence.example.com/display/DEMO/Page+43",
-      "link-jira": null,
-      "link-other": null,
+      "linkConf": "https://confluence.example.com/display/DEMO/Page+43",
+      "linkJira": null,
+      "linkOther": null,
       "completed": false
     },
     {
@@ -768,9 +773,9 @@ const USERDATA = {
       "assignedTo": "Riley, M",
       "priority": 21,
       "category": "DEV",
-      "link-conf": null,
-      "link-jira": null,
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": null,
+      "linkOther": null,
       "completed": false
     },
     {
@@ -782,9 +787,9 @@ const USERDATA = {
       "assignedTo": null,
       "priority": 11,
       "category": "TST",
-      "link-conf": null,
-      "link-jira": null,
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": null,
+      "linkOther": null,
       "completed": "2026-01-16"
     },
     {
@@ -796,9 +801,9 @@ const USERDATA = {
       "assignedTo": "Quinn",
       "priority": 21,
       "category": "DEV",
-      "link-conf": null,
-      "link-jira": null,
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": null,
+      "linkOther": null,
       "completed": "2026-01-20"
     },
     {
@@ -810,9 +815,9 @@ const USERDATA = {
       "assignedTo": "Avery",
       "priority": 6,
       "category": "DEV",
-      "link-conf": null,
-      "link-jira": null,
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": null,
+      "linkOther": null,
       "completed": "2026-01-27"
     },
     {
@@ -824,9 +829,9 @@ const USERDATA = {
       "assignedTo": "Riley, M",
       "priority": 4,
       "category": "SEC",
-      "link-conf": null,
-      "link-jira": null,
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": null,
+      "linkOther": null,
       "completed": false
     },
     {
@@ -838,9 +843,9 @@ const USERDATA = {
       "assignedTo": "Avery",
       "priority": 27,
       "category": "REQ",
-      "link-conf": "https://confluence.example.com/display/DEMO/Page+49",
-      "link-jira": null,
-      "link-other": null,
+      "linkConf": "https://confluence.example.com/display/DEMO/Page+49",
+      "linkJira": null,
+      "linkOther": null,
       "completed": false
     },
     {
@@ -852,9 +857,9 @@ const USERDATA = {
       "assignedTo": "Quinn",
       "priority": 28,
       "category": "DAT",
-      "link-conf": null,
-      "link-jira": null,
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": null,
+      "linkOther": null,
       "completed": "2026-01-01"
     },
     {
@@ -866,9 +871,9 @@ const USERDATA = {
       "assignedTo": "Jordan",
       "priority": 10,
       "category": "DAT",
-      "link-conf": null,
-      "link-jira": "https://jira.example.com/browse/DEMO-51",
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": "https://jira.example.com/browse/DEMO-51",
+      "linkOther": null,
       "completed": false
     },
     {
@@ -880,9 +885,9 @@ const USERDATA = {
       "assignedTo": "Avery",
       "priority": 24,
       "category": "ARC",
-      "link-conf": null,
-      "link-jira": null,
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": null,
+      "linkOther": null,
       "completed": false
     },
     {
@@ -894,9 +899,9 @@ const USERDATA = {
       "assignedTo": "Sam",
       "priority": 26,
       "category": "DEV",
-      "link-conf": "https://confluence.example.com/display/DEMO/Page+53",
-      "link-jira": null,
-      "link-other": "https://example.com/other/53",
+      "linkConf": "https://confluence.example.com/display/DEMO/Page+53",
+      "linkJira": null,
+      "linkOther": "https://example.com/other/53",
       "completed": "2026-01-27"
     },
     {
@@ -908,9 +913,9 @@ const USERDATA = {
       "assignedTo": "Riley, M",
       "priority": 10,
       "category": "DEV",
-      "link-conf": null,
-      "link-jira": null,
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": null,
+      "linkOther": null,
       "completed": false
     },
     {
@@ -922,9 +927,9 @@ const USERDATA = {
       "assignedTo": "Riley, M",
       "priority": 19,
       "category": "TST",
-      "link-conf": "https://confluence.example.com/display/DEMO/Page+55",
-      "link-jira": null,
-      "link-other": null,
+      "linkConf": "https://confluence.example.com/display/DEMO/Page+55",
+      "linkJira": null,
+      "linkOther": null,
       "completed": "2026-01-12"
     },
     {
@@ -936,9 +941,9 @@ const USERDATA = {
       "assignedTo": "Avery",
       "priority": 29,
       "category": "OPS",
-      "link-conf": null,
-      "link-jira": null,
-      "link-other": "https://example.com/other/56",
+      "linkConf": null,
+      "linkJira": null,
+      "linkOther": "https://example.com/other/56",
       "completed": false
     },
     {
@@ -950,9 +955,9 @@ const USERDATA = {
       "assignedTo": null,
       "priority": 0,
       "category": "OPS",
-      "link-conf": null,
-      "link-jira": "https://jira.example.com/browse/DEMO-57",
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": "https://jira.example.com/browse/DEMO-57",
+      "linkOther": null,
       "completed": false
     },
     {
@@ -964,9 +969,9 @@ const USERDATA = {
       "assignedTo": "Riley, M",
       "priority": 2,
       "category": "SEC",
-      "link-conf": null,
-      "link-jira": null,
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": null,
+      "linkOther": null,
       "completed": false
     },
     {
@@ -978,9 +983,9 @@ const USERDATA = {
       "assignedTo": "Jordan",
       "priority": 16,
       "category": "DEV",
-      "link-conf": "https://confluence.example.com/display/DEMO/Page+59",
-      "link-jira": null,
-      "link-other": null,
+      "linkConf": "https://confluence.example.com/display/DEMO/Page+59",
+      "linkJira": null,
+      "linkOther": null,
       "completed": "2026-01-29"
     },
     {
@@ -992,9 +997,9 @@ const USERDATA = {
       "assignedTo": "Quinn",
       "priority": 16,
       "category": "OPS",
-      "link-conf": null,
-      "link-jira": null,
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": null,
+      "linkOther": null,
       "completed": "2026-01-22"
     },
     {
@@ -1006,9 +1011,9 @@ const USERDATA = {
       "assignedTo": "Morgan",
       "priority": 23,
       "category": "SEC",
-      "link-conf": null,
-      "link-jira": null,
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": null,
+      "linkOther": null,
       "completed": false
     },
     {
@@ -1020,9 +1025,9 @@ const USERDATA = {
       "assignedTo": "Avery",
       "priority": 17,
       "category": "TST",
-      "link-conf": null,
-      "link-jira": null,
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": null,
+      "linkOther": null,
       "completed": "2026-01-06"
     },
     {
@@ -1034,9 +1039,9 @@ const USERDATA = {
       "assignedTo": "SW Team Orion",
       "priority": 2,
       "category": "REQ",
-      "link-conf": null,
-      "link-jira": "https://jira.example.com/browse/DEMO-63",
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": "https://jira.example.com/browse/DEMO-63",
+      "linkOther": null,
       "completed": false
     },
     {
@@ -1048,9 +1053,9 @@ const USERDATA = {
       "assignedTo": "SW Team Orion",
       "priority": 18,
       "category": "TST",
-      "link-conf": null,
-      "link-jira": null,
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": null,
+      "linkOther": null,
       "completed": false
     },
     {
@@ -1062,9 +1067,9 @@ const USERDATA = {
       "assignedTo": "SW Team Orion",
       "priority": 7,
       "category": "REQ",
-      "link-conf": null,
-      "link-jira": null,
-      "link-other": "https://example.com/other/65",
+      "linkConf": null,
+      "linkJira": null,
+      "linkOther": "https://example.com/other/65",
       "completed": "2026-01-01"
     },
     {
@@ -1076,9 +1081,9 @@ const USERDATA = {
       "assignedTo": "Blake",
       "priority": 19,
       "category": "OPS",
-      "link-conf": null,
-      "link-jira": null,
-      "link-other": "https://example.com/other/66",
+      "linkConf": null,
+      "linkJira": null,
+      "linkOther": "https://example.com/other/66",
       "completed": false
     },
     {
@@ -1090,9 +1095,9 @@ const USERDATA = {
       "assignedTo": "Jordan",
       "priority": 21,
       "category": "TST",
-      "link-conf": null,
-      "link-jira": null,
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": null,
+      "linkOther": null,
       "completed": false
     },
     {
@@ -1104,9 +1109,9 @@ const USERDATA = {
       "assignedTo": "SW Team Orion",
       "priority": 10,
       "category": "TST",
-      "link-conf": "https://confluence.example.com/display/DEMO/Page+68",
-      "link-jira": "https://jira.example.com/browse/DEMO-68",
-      "link-other": null,
+      "linkConf": "https://confluence.example.com/display/DEMO/Page+68",
+      "linkJira": "https://jira.example.com/browse/DEMO-68",
+      "linkOther": null,
       "completed": "2026-01-25"
     },
     {
@@ -1118,9 +1123,9 @@ const USERDATA = {
       "assignedTo": "Avery",
       "priority": 17,
       "category": "SEC",
-      "link-conf": "https://confluence.example.com/display/DEMO/Page+69",
-      "link-jira": null,
-      "link-other": null,
+      "linkConf": "https://confluence.example.com/display/DEMO/Page+69",
+      "linkJira": null,
+      "linkOther": null,
       "completed": "2026-01-13"
     },
     {
@@ -1132,9 +1137,9 @@ const USERDATA = {
       "assignedTo": "Avery",
       "priority": 7,
       "category": "SEC",
-      "link-conf": null,
-      "link-jira": "https://jira.example.com/browse/DEMO-70",
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": "https://jira.example.com/browse/DEMO-70",
+      "linkOther": null,
       "completed": "2026-01-08"
     },
     {
@@ -1146,9 +1151,9 @@ const USERDATA = {
       "assignedTo": "Riley, M",
       "priority": 4,
       "category": "OPS",
-      "link-conf": null,
-      "link-jira": null,
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": null,
+      "linkOther": null,
       "completed": "2026-01-15"
     },
     {
@@ -1160,9 +1165,9 @@ const USERDATA = {
       "assignedTo": "SW Team Orion",
       "priority": 14,
       "category": "REQ",
-      "link-conf": null,
-      "link-jira": null,
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": null,
+      "linkOther": null,
       "completed": "2026-01-11"
     },
     {
@@ -1174,9 +1179,9 @@ const USERDATA = {
       "assignedTo": "Sam",
       "priority": 21,
       "category": "SEC",
-      "link-conf": null,
-      "link-jira": "https://jira.example.com/browse/DEMO-73",
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": "https://jira.example.com/browse/DEMO-73",
+      "linkOther": null,
       "completed": "2026-01-23"
     },
     {
@@ -1188,9 +1193,9 @@ const USERDATA = {
       "assignedTo": null,
       "priority": 8,
       "category": "ARC",
-      "link-conf": null,
-      "link-jira": null,
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": null,
+      "linkOther": null,
       "completed": "2026-01-14"
     },
     {
@@ -1202,9 +1207,9 @@ const USERDATA = {
       "assignedTo": "Sam",
       "priority": 22,
       "category": "DAT",
-      "link-conf": null,
-      "link-jira": null,
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": null,
+      "linkOther": null,
       "completed": "2026-01-30"
     },
     {
@@ -1216,9 +1221,9 @@ const USERDATA = {
       "assignedTo": "Morgan",
       "priority": 2,
       "category": "PMA",
-      "link-conf": null,
-      "link-jira": null,
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": null,
+      "linkOther": null,
       "completed": false
     },
     {
@@ -1230,9 +1235,9 @@ const USERDATA = {
       "assignedTo": "Morgan",
       "priority": 18,
       "category": "ARC",
-      "link-conf": null,
-      "link-jira": null,
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": null,
+      "linkOther": null,
       "completed": false
     },
     {
@@ -1244,9 +1249,9 @@ const USERDATA = {
       "assignedTo": null,
       "priority": 12,
       "category": "TST",
-      "link-conf": null,
-      "link-jira": null,
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": null,
+      "linkOther": null,
       "completed": "2026-01-07"
     },
     {
@@ -1258,9 +1263,9 @@ const USERDATA = {
       "assignedTo": "Avery",
       "priority": 14,
       "category": "PMA",
-      "link-conf": null,
-      "link-jira": "https://jira.example.com/browse/DEMO-79",
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": "https://jira.example.com/browse/DEMO-79",
+      "linkOther": null,
       "completed": "2026-01-01"
     },
     {
@@ -1272,9 +1277,9 @@ const USERDATA = {
       "assignedTo": "SW Team Orion",
       "priority": 9,
       "category": "DOC",
-      "link-conf": null,
-      "link-jira": "https://jira.example.com/browse/DEMO-80",
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": "https://jira.example.com/browse/DEMO-80",
+      "linkOther": null,
       "completed": "2026-01-19"
     },
     {
@@ -1286,9 +1291,9 @@ const USERDATA = {
       "assignedTo": "Jordan",
       "priority": 26,
       "category": "ARC",
-      "link-conf": null,
-      "link-jira": null,
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": null,
+      "linkOther": null,
       "completed": "2026-01-05"
     },
     {
@@ -1300,9 +1305,9 @@ const USERDATA = {
       "assignedTo": "Jordan",
       "priority": 3,
       "category": "DAT",
-      "link-conf": null,
-      "link-jira": "https://jira.example.com/browse/DEMO-82",
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": "https://jira.example.com/browse/DEMO-82",
+      "linkOther": null,
       "completed": "2026-01-08"
     },
     {
@@ -1314,9 +1319,9 @@ const USERDATA = {
       "assignedTo": "Quinn",
       "priority": 7,
       "category": "DAT",
-      "link-conf": "https://confluence.example.com/display/DEMO/Page+83",
-      "link-jira": null,
-      "link-other": null,
+      "linkConf": "https://confluence.example.com/display/DEMO/Page+83",
+      "linkJira": null,
+      "linkOther": null,
       "completed": false
     },
     {
@@ -1328,9 +1333,9 @@ const USERDATA = {
       "assignedTo": null,
       "priority": 4,
       "category": "DOC",
-      "link-conf": null,
-      "link-jira": null,
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": null,
+      "linkOther": null,
       "completed": "2026-02-02"
     },
     {
@@ -1342,9 +1347,9 @@ const USERDATA = {
       "assignedTo": "Avery",
       "priority": 11,
       "category": "OPS",
-      "link-conf": null,
-      "link-jira": null,
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": null,
+      "linkOther": null,
       "completed": false
     },
     {
@@ -1356,9 +1361,9 @@ const USERDATA = {
       "assignedTo": "Blake",
       "priority": 7,
       "category": "PMA",
-      "link-conf": "https://confluence.example.com/display/DEMO/Page+86",
-      "link-jira": null,
-      "link-other": null,
+      "linkConf": "https://confluence.example.com/display/DEMO/Page+86",
+      "linkJira": null,
+      "linkOther": null,
       "completed": false
     },
     {
@@ -1370,9 +1375,9 @@ const USERDATA = {
       "assignedTo": null,
       "priority": 19,
       "category": "DAT",
-      "link-conf": "https://confluence.example.com/display/DEMO/Page+87",
-      "link-jira": null,
-      "link-other": null,
+      "linkConf": "https://confluence.example.com/display/DEMO/Page+87",
+      "linkJira": null,
+      "linkOther": null,
       "completed": false
     },
     {
@@ -1384,9 +1389,9 @@ const USERDATA = {
       "assignedTo": "Riley, M",
       "priority": 28,
       "category": "DOC",
-      "link-conf": null,
-      "link-jira": null,
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": null,
+      "linkOther": null,
       "completed": "2026-01-10"
     },
     {
@@ -1398,9 +1403,9 @@ const USERDATA = {
       "assignedTo": null,
       "priority": 23,
       "category": "REQ",
-      "link-conf": "https://confluence.example.com/display/DEMO/Page+89",
-      "link-jira": "https://jira.example.com/browse/DEMO-89",
-      "link-other": null,
+      "linkConf": "https://confluence.example.com/display/DEMO/Page+89",
+      "linkJira": "https://jira.example.com/browse/DEMO-89",
+      "linkOther": null,
       "completed": false
     },
     {
@@ -1412,9 +1417,9 @@ const USERDATA = {
       "assignedTo": "Quinn",
       "priority": 4,
       "category": "DAT",
-      "link-conf": null,
-      "link-jira": "https://jira.example.com/browse/DEMO-90",
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": "https://jira.example.com/browse/DEMO-90",
+      "linkOther": null,
       "completed": false
     },
     {
@@ -1426,9 +1431,9 @@ const USERDATA = {
       "assignedTo": null,
       "priority": 24,
       "category": "DOC",
-      "link-conf": null,
-      "link-jira": "https://jira.example.com/browse/DEMO-91",
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": "https://jira.example.com/browse/DEMO-91",
+      "linkOther": null,
       "completed": "2026-01-19"
     },
     {
@@ -1440,9 +1445,9 @@ const USERDATA = {
       "assignedTo": "Jordan",
       "priority": 24,
       "category": "DEV",
-      "link-conf": null,
-      "link-jira": null,
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": null,
+      "linkOther": null,
       "completed": "2026-02-04"
     },
     {
@@ -1454,9 +1459,9 @@ const USERDATA = {
       "assignedTo": "Sam",
       "priority": 21,
       "category": "PMA",
-      "link-conf": null,
-      "link-jira": null,
-      "link-other": "https://example.com/other/93",
+      "linkConf": null,
+      "linkJira": null,
+      "linkOther": "https://example.com/other/93",
       "completed": false
     },
     {
@@ -1468,9 +1473,9 @@ const USERDATA = {
       "assignedTo": null,
       "priority": 5,
       "category": "DEV",
-      "link-conf": null,
-      "link-jira": null,
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": null,
+      "linkOther": null,
       "completed": false
     },
     {
@@ -1482,9 +1487,9 @@ const USERDATA = {
       "assignedTo": "Sam",
       "priority": 12,
       "category": "DOC",
-      "link-conf": null,
-      "link-jira": null,
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": null,
+      "linkOther": null,
       "completed": false
     },
     {
@@ -1496,9 +1501,9 @@ const USERDATA = {
       "assignedTo": "Riley, M",
       "priority": 5,
       "category": "DOC",
-      "link-conf": null,
-      "link-jira": null,
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": null,
+      "linkOther": null,
       "completed": "2026-01-19"
     },
     {
@@ -1510,9 +1515,9 @@ const USERDATA = {
       "assignedTo": "SW Team Orion",
       "priority": 18,
       "category": "DOC",
-      "link-conf": null,
-      "link-jira": null,
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": null,
+      "linkOther": null,
       "completed": "2026-01-27"
     },
     {
@@ -1524,9 +1529,9 @@ const USERDATA = {
       "assignedTo": "Jordan",
       "priority": 1,
       "category": "DOC",
-      "link-conf": null,
-      "link-jira": "https://jira.example.com/browse/DEMO-98",
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": "https://jira.example.com/browse/DEMO-98",
+      "linkOther": null,
       "completed": false
     },
     {
@@ -1538,9 +1543,9 @@ const USERDATA = {
       "assignedTo": "Avery",
       "priority": 25,
       "category": "REQ",
-      "link-conf": null,
-      "link-jira": null,
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": null,
+      "linkOther": null,
       "completed": "2026-01-14"
     },
     {
@@ -1552,9 +1557,9 @@ const USERDATA = {
       "assignedTo": "Quinn",
       "priority": 1,
       "category": "ARC",
-      "link-conf": null,
-      "link-jira": "https://jira.example.com/browse/DEMO-100",
-      "link-other": "https://example.com/other/100",
+      "linkConf": null,
+      "linkJira": "https://jira.example.com/browse/DEMO-100",
+      "linkOther": "https://example.com/other/100",
       "completed": "2026-01-26"
     },
     {
@@ -1566,9 +1571,9 @@ const USERDATA = {
       "assignedTo": "Sam",
       "priority": 2,
       "category": "DEV",
-      "link-conf": null,
-      "link-jira": null,
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": null,
+      "linkOther": null,
       "completed": false
     },
     {
@@ -1580,9 +1585,9 @@ const USERDATA = {
       "assignedTo": "SW Team Orion",
       "priority": 4,
       "category": "DAT",
-      "link-conf": null,
-      "link-jira": "https://jira.example.com/browse/DEMO-102",
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": "https://jira.example.com/browse/DEMO-102",
+      "linkOther": null,
       "completed": false
     },
     {
@@ -1594,9 +1599,9 @@ const USERDATA = {
       "assignedTo": "Avery",
       "priority": 21,
       "category": "DAT",
-      "link-conf": null,
-      "link-jira": null,
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": null,
+      "linkOther": null,
       "completed": "2026-01-20"
     },
     {
@@ -1608,9 +1613,9 @@ const USERDATA = {
       "assignedTo": "SW Team Orion",
       "priority": 24,
       "category": "SEC",
-      "link-conf": null,
-      "link-jira": null,
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": null,
+      "linkOther": null,
       "completed": false
     },
     {
@@ -1622,9 +1627,9 @@ const USERDATA = {
       "assignedTo": "Morgan",
       "priority": 2,
       "category": "ARC",
-      "link-conf": null,
-      "link-jira": null,
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": null,
+      "linkOther": null,
       "completed": false
     },
     {
@@ -1636,9 +1641,9 @@ const USERDATA = {
       "assignedTo": "Quinn",
       "priority": 4,
       "category": "PMA",
-      "link-conf": null,
-      "link-jira": null,
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": null,
+      "linkOther": null,
       "completed": "2026-01-26"
     },
     {
@@ -1650,9 +1655,9 @@ const USERDATA = {
       "assignedTo": "Jordan",
       "priority": 3,
       "category": "SEC",
-      "link-conf": null,
-      "link-jira": null,
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": null,
+      "linkOther": null,
       "completed": false
     },
     {
@@ -1664,9 +1669,9 @@ const USERDATA = {
       "assignedTo": "Avery",
       "priority": 7,
       "category": "REQ",
-      "link-conf": "https://confluence.example.com/display/DEMO/Page+108",
-      "link-jira": null,
-      "link-other": null,
+      "linkConf": "https://confluence.example.com/display/DEMO/Page+108",
+      "linkJira": null,
+      "linkOther": null,
       "completed": "2026-01-14"
     },
     {
@@ -1678,9 +1683,9 @@ const USERDATA = {
       "assignedTo": "Avery",
       "priority": 23,
       "category": "DOC",
-      "link-conf": "https://confluence.example.com/display/DEMO/Page+109",
-      "link-jira": null,
-      "link-other": null,
+      "linkConf": "https://confluence.example.com/display/DEMO/Page+109",
+      "linkJira": null,
+      "linkOther": null,
       "completed": false
     },
     {
@@ -1692,9 +1697,9 @@ const USERDATA = {
       "assignedTo": "Morgan",
       "priority": 30,
       "category": "ARC",
-      "link-conf": null,
-      "link-jira": "https://jira.example.com/browse/DEMO-110",
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": "https://jira.example.com/browse/DEMO-110",
+      "linkOther": null,
       "completed": false
     },
     {
@@ -1706,9 +1711,9 @@ const USERDATA = {
       "assignedTo": "Avery",
       "priority": 10,
       "category": "PMA",
-      "link-conf": null,
-      "link-jira": null,
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": null,
+      "linkOther": null,
       "completed": false
     },
     {
@@ -1720,9 +1725,9 @@ const USERDATA = {
       "assignedTo": "Blake",
       "priority": 26,
       "category": "SEC",
-      "link-conf": null,
-      "link-jira": "https://jira.example.com/browse/DEMO-112",
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": "https://jira.example.com/browse/DEMO-112",
+      "linkOther": null,
       "completed": "2026-01-19"
     },
     {
@@ -1734,9 +1739,9 @@ const USERDATA = {
       "assignedTo": "Sam",
       "priority": 25,
       "category": "TST",
-      "link-conf": "https://confluence.example.com/display/DEMO/Page+113",
-      "link-jira": null,
-      "link-other": null,
+      "linkConf": "https://confluence.example.com/display/DEMO/Page+113",
+      "linkJira": null,
+      "linkOther": null,
       "completed": "2026-01-25"
     },
     {
@@ -1748,9 +1753,9 @@ const USERDATA = {
       "assignedTo": "Sam",
       "priority": 1,
       "category": "ARC",
-      "link-conf": null,
-      "link-jira": null,
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": null,
+      "linkOther": null,
       "completed": false
     },
     {
@@ -1762,9 +1767,9 @@ const USERDATA = {
       "assignedTo": null,
       "priority": 29,
       "category": "REQ",
-      "link-conf": null,
-      "link-jira": null,
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": null,
+      "linkOther": null,
       "completed": false
     },
     {
@@ -1776,9 +1781,9 @@ const USERDATA = {
       "assignedTo": "Blake",
       "priority": 10,
       "category": "TST",
-      "link-conf": null,
-      "link-jira": null,
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": null,
+      "linkOther": null,
       "completed": false
     },
     {
@@ -1790,9 +1795,9 @@ const USERDATA = {
       "assignedTo": null,
       "priority": 11,
       "category": "TST",
-      "link-conf": null,
-      "link-jira": "https://jira.example.com/browse/DEMO-117",
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": "https://jira.example.com/browse/DEMO-117",
+      "linkOther": null,
       "completed": "2026-01-17"
     },
     {
@@ -1804,9 +1809,9 @@ const USERDATA = {
       "assignedTo": "SW Team Orion",
       "priority": 16,
       "category": "REQ",
-      "link-conf": null,
-      "link-jira": null,
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": null,
+      "linkOther": null,
       "completed": false
     },
     {
@@ -1818,9 +1823,9 @@ const USERDATA = {
       "assignedTo": "Riley, M",
       "priority": 30,
       "category": "ARC",
-      "link-conf": null,
-      "link-jira": "https://jira.example.com/browse/DEMO-119",
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": "https://jira.example.com/browse/DEMO-119",
+      "linkOther": null,
       "completed": false
     },
     {
@@ -1832,9 +1837,9 @@ const USERDATA = {
       "assignedTo": "Avery",
       "priority": 0,
       "category": "DAT",
-      "link-conf": null,
-      "link-jira": null,
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": null,
+      "linkOther": null,
       "completed": false
     },
     {
@@ -1846,9 +1851,9 @@ const USERDATA = {
       "assignedTo": "Sam",
       "priority": 2,
       "category": "OPS",
-      "link-conf": "https://confluence.example.com/display/DEMO/Page+121",
-      "link-jira": null,
-      "link-other": null,
+      "linkConf": "https://confluence.example.com/display/DEMO/Page+121",
+      "linkJira": null,
+      "linkOther": null,
       "completed": "2026-01-01"
     },
     {
@@ -1860,9 +1865,9 @@ const USERDATA = {
       "assignedTo": "SW Team Orion",
       "priority": 3,
       "category": "DOC",
-      "link-conf": null,
-      "link-jira": null,
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": null,
+      "linkOther": null,
       "completed": false
     },
     {
@@ -1874,9 +1879,9 @@ const USERDATA = {
       "assignedTo": "Blake",
       "priority": 16,
       "category": "ARC",
-      "link-conf": null,
-      "link-jira": null,
-      "link-other": "https://example.com/other/123",
+      "linkConf": null,
+      "linkJira": null,
+      "linkOther": "https://example.com/other/123",
       "completed": "2026-02-04"
     },
     {
@@ -1888,9 +1893,9 @@ const USERDATA = {
       "assignedTo": "Sam",
       "priority": 12,
       "category": "TST",
-      "link-conf": null,
-      "link-jira": null,
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": null,
+      "linkOther": null,
       "completed": "2026-01-25"
     },
     {
@@ -1902,9 +1907,9 @@ const USERDATA = {
       "assignedTo": "Quinn",
       "priority": 11,
       "category": "DEV",
-      "link-conf": "https://confluence.example.com/display/DEMO/Page+125",
-      "link-jira": null,
-      "link-other": null,
+      "linkConf": "https://confluence.example.com/display/DEMO/Page+125",
+      "linkJira": null,
+      "linkOther": null,
       "completed": false
     },
     {
@@ -1916,9 +1921,9 @@ const USERDATA = {
       "assignedTo": "Jordan",
       "priority": 16,
       "category": "PMA",
-      "link-conf": null,
-      "link-jira": null,
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": null,
+      "linkOther": null,
       "completed": "2026-01-09"
     },
     {
@@ -1930,9 +1935,9 @@ const USERDATA = {
       "assignedTo": "Avery",
       "priority": 5,
       "category": "PMA",
-      "link-conf": null,
-      "link-jira": null,
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": null,
+      "linkOther": null,
       "completed": false
     },
     {
@@ -1944,9 +1949,9 @@ const USERDATA = {
       "assignedTo": "SW Team Orion",
       "priority": 23,
       "category": "OPS",
-      "link-conf": null,
-      "link-jira": null,
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": null,
+      "linkOther": null,
       "completed": "2026-01-15"
     },
     {
@@ -1958,9 +1963,9 @@ const USERDATA = {
       "assignedTo": "Riley, M",
       "priority": 8,
       "category": "SEC",
-      "link-conf": null,
-      "link-jira": null,
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": null,
+      "linkOther": null,
       "completed": "2026-01-22"
     },
     {
@@ -1972,9 +1977,9 @@ const USERDATA = {
       "assignedTo": "Sam",
       "priority": 30,
       "category": "TST",
-      "link-conf": "https://confluence.example.com/display/DEMO/Page+130",
-      "link-jira": "https://jira.example.com/browse/DEMO-130",
-      "link-other": null,
+      "linkConf": "https://confluence.example.com/display/DEMO/Page+130",
+      "linkJira": "https://jira.example.com/browse/DEMO-130",
+      "linkOther": null,
       "completed": false
     },
     {
@@ -1986,9 +1991,9 @@ const USERDATA = {
       "assignedTo": "Morgan",
       "priority": 7,
       "category": "REQ",
-      "link-conf": null,
-      "link-jira": null,
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": null,
+      "linkOther": null,
       "completed": false
     },
     {
@@ -2000,9 +2005,9 @@ const USERDATA = {
       "assignedTo": "Morgan",
       "priority": 28,
       "category": "PMA",
-      "link-conf": null,
-      "link-jira": null,
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": null,
+      "linkOther": null,
       "completed": "2026-01-27"
     },
     {
@@ -2014,9 +2019,9 @@ const USERDATA = {
       "assignedTo": "Avery",
       "priority": 12,
       "category": "TST",
-      "link-conf": "https://confluence.example.com/display/DEMO/Page+133",
-      "link-jira": null,
-      "link-other": null,
+      "linkConf": "https://confluence.example.com/display/DEMO/Page+133",
+      "linkJira": null,
+      "linkOther": null,
       "completed": false
     },
     {
@@ -2028,9 +2033,9 @@ const USERDATA = {
       "assignedTo": "SW Team Orion",
       "priority": 10,
       "category": "TST",
-      "link-conf": null,
-      "link-jira": null,
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": null,
+      "linkOther": null,
       "completed": "2026-01-24"
     },
     {
@@ -2042,9 +2047,9 @@ const USERDATA = {
       "assignedTo": "Blake",
       "priority": 4,
       "category": "DOC",
-      "link-conf": null,
-      "link-jira": "https://jira.example.com/browse/DEMO-135",
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": "https://jira.example.com/browse/DEMO-135",
+      "linkOther": null,
       "completed": false
     },
     {
@@ -2056,9 +2061,9 @@ const USERDATA = {
       "assignedTo": "Morgan",
       "priority": 16,
       "category": "SEC",
-      "link-conf": null,
-      "link-jira": null,
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": null,
+      "linkOther": null,
       "completed": false
     },
     {
@@ -2070,9 +2075,9 @@ const USERDATA = {
       "assignedTo": "Sam",
       "priority": 29,
       "category": "TST",
-      "link-conf": null,
-      "link-jira": null,
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": null,
+      "linkOther": null,
       "completed": "2026-01-08"
     },
     {
@@ -2084,9 +2089,9 @@ const USERDATA = {
       "assignedTo": "Riley, M",
       "priority": 27,
       "category": "OPS",
-      "link-conf": "https://confluence.example.com/display/DEMO/Page+138",
-      "link-jira": null,
-      "link-other": null,
+      "linkConf": "https://confluence.example.com/display/DEMO/Page+138",
+      "linkJira": null,
+      "linkOther": null,
       "completed": "2026-01-10"
     },
     {
@@ -2098,9 +2103,9 @@ const USERDATA = {
       "assignedTo": "Sam",
       "priority": 0,
       "category": "REQ",
-      "link-conf": null,
-      "link-jira": "https://jira.example.com/browse/DEMO-139",
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": "https://jira.example.com/browse/DEMO-139",
+      "linkOther": null,
       "completed": "2026-01-12"
     },
     {
@@ -2112,9 +2117,9 @@ const USERDATA = {
       "assignedTo": "Sam",
       "priority": 28,
       "category": "REQ",
-      "link-conf": null,
-      "link-jira": null,
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": null,
+      "linkOther": null,
       "completed": "2026-01-19"
     },
     {
@@ -2126,9 +2131,9 @@ const USERDATA = {
       "assignedTo": "Avery",
       "priority": 9,
       "category": "DAT",
-      "link-conf": null,
-      "link-jira": null,
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": null,
+      "linkOther": null,
       "completed": "2026-01-19"
     },
     {
@@ -2140,9 +2145,9 @@ const USERDATA = {
       "assignedTo": "Avery",
       "priority": 2,
       "category": "OPS",
-      "link-conf": "https://confluence.example.com/display/DEMO/Page+142",
-      "link-jira": null,
-      "link-other": null,
+      "linkConf": "https://confluence.example.com/display/DEMO/Page+142",
+      "linkJira": null,
+      "linkOther": null,
       "completed": false
     },
     {
@@ -2154,9 +2159,9 @@ const USERDATA = {
       "assignedTo": "Quinn",
       "priority": 24,
       "category": "PMA",
-      "link-conf": null,
-      "link-jira": null,
-      "link-other": "https://example.com/other/143",
+      "linkConf": null,
+      "linkJira": null,
+      "linkOther": "https://example.com/other/143",
       "completed": "2026-01-25"
     },
     {
@@ -2168,9 +2173,9 @@ const USERDATA = {
       "assignedTo": "Avery",
       "priority": 30,
       "category": "DAT",
-      "link-conf": null,
-      "link-jira": null,
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": null,
+      "linkOther": null,
       "completed": "2026-01-27"
     },
     {
@@ -2182,9 +2187,9 @@ const USERDATA = {
       "assignedTo": "Morgan",
       "priority": 29,
       "category": "DEV",
-      "link-conf": null,
-      "link-jira": null,
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": null,
+      "linkOther": null,
       "completed": false
     },
     {
@@ -2196,9 +2201,9 @@ const USERDATA = {
       "assignedTo": null,
       "priority": 19,
       "category": "DEV",
-      "link-conf": null,
-      "link-jira": "https://jira.example.com/browse/DEMO-146",
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": "https://jira.example.com/browse/DEMO-146",
+      "linkOther": null,
       "completed": false
     },
     {
@@ -2210,9 +2215,9 @@ const USERDATA = {
       "assignedTo": "SW Team Orion",
       "priority": 22,
       "category": "DAT",
-      "link-conf": null,
-      "link-jira": null,
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": null,
+      "linkOther": null,
       "completed": "2026-01-29"
     },
     {
@@ -2224,9 +2229,9 @@ const USERDATA = {
       "assignedTo": "Quinn",
       "priority": 11,
       "category": "DEV",
-      "link-conf": "https://confluence.example.com/display/DEMO/Page+148",
-      "link-jira": null,
-      "link-other": null,
+      "linkConf": "https://confluence.example.com/display/DEMO/Page+148",
+      "linkJira": null,
+      "linkOther": null,
       "completed": "2026-01-17"
     },
     {
@@ -2238,9 +2243,9 @@ const USERDATA = {
       "assignedTo": "SW Team Orion",
       "priority": 30,
       "category": "PMA",
-      "link-conf": null,
-      "link-jira": null,
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": null,
+      "linkOther": null,
       "completed": "2026-01-22"
     },
     {
@@ -2252,9 +2257,9 @@ const USERDATA = {
       "assignedTo": "Avery",
       "priority": 26,
       "category": "SEC",
-      "link-conf": null,
-      "link-jira": null,
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": null,
+      "linkOther": null,
       "completed": "2026-01-23"
     },
     {
@@ -2266,9 +2271,9 @@ const USERDATA = {
       "assignedTo": "Avery",
       "priority": 17,
       "category": "DEV",
-      "link-conf": "https://confluence.example.com/display/DEMO/Page+151",
-      "link-jira": null,
-      "link-other": null,
+      "linkConf": "https://confluence.example.com/display/DEMO/Page+151",
+      "linkJira": null,
+      "linkOther": null,
       "completed": false
     },
     {
@@ -2280,9 +2285,9 @@ const USERDATA = {
       "assignedTo": "Quinn",
       "priority": 12,
       "category": "TST",
-      "link-conf": null,
-      "link-jira": null,
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": null,
+      "linkOther": null,
       "completed": false
     },
     {
@@ -2294,9 +2299,9 @@ const USERDATA = {
       "assignedTo": "Blake",
       "priority": 13,
       "category": "OPS",
-      "link-conf": null,
-      "link-jira": null,
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": null,
+      "linkOther": null,
       "completed": "2026-01-13"
     },
     {
@@ -2308,9 +2313,9 @@ const USERDATA = {
       "assignedTo": "Avery",
       "priority": 0,
       "category": "DAT",
-      "link-conf": null,
-      "link-jira": null,
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": null,
+      "linkOther": null,
       "completed": false
     },
     {
@@ -2322,9 +2327,9 @@ const USERDATA = {
       "assignedTo": "Blake",
       "priority": 11,
       "category": "DEV",
-      "link-conf": null,
-      "link-jira": null,
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": null,
+      "linkOther": null,
       "completed": false
     },
     {
@@ -2336,9 +2341,9 @@ const USERDATA = {
       "assignedTo": "Blake",
       "priority": 9,
       "category": "DEV",
-      "link-conf": null,
-      "link-jira": "https://jira.example.com/browse/DEMO-156",
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": "https://jira.example.com/browse/DEMO-156",
+      "linkOther": null,
       "completed": "2026-01-11"
     },
     {
@@ -2350,9 +2355,9 @@ const USERDATA = {
       "assignedTo": "Blake",
       "priority": 14,
       "category": "ARC",
-      "link-conf": null,
-      "link-jira": "https://jira.example.com/browse/DEMO-157",
-      "link-other": "https://example.com/other/157",
+      "linkConf": null,
+      "linkJira": "https://jira.example.com/browse/DEMO-157",
+      "linkOther": "https://example.com/other/157",
       "completed": false
     },
     {
@@ -2364,9 +2369,9 @@ const USERDATA = {
       "assignedTo": "Riley, M",
       "priority": 5,
       "category": "DAT",
-      "link-conf": "https://confluence.example.com/display/DEMO/Page+158",
-      "link-jira": null,
-      "link-other": null,
+      "linkConf": "https://confluence.example.com/display/DEMO/Page+158",
+      "linkJira": null,
+      "linkOther": null,
       "completed": "2026-01-13"
     },
     {
@@ -2378,9 +2383,9 @@ const USERDATA = {
       "assignedTo": "SW Team Orion",
       "priority": 6,
       "category": "ARC",
-      "link-conf": "https://confluence.example.com/display/DEMO/Page+159",
-      "link-jira": "https://jira.example.com/browse/DEMO-159",
-      "link-other": null,
+      "linkConf": "https://confluence.example.com/display/DEMO/Page+159",
+      "linkJira": "https://jira.example.com/browse/DEMO-159",
+      "linkOther": null,
       "completed": "2026-01-11"
     },
     {
@@ -2392,9 +2397,9 @@ const USERDATA = {
       "assignedTo": "Morgan",
       "priority": 30,
       "category": "DEV",
-      "link-conf": null,
-      "link-jira": null,
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": null,
+      "linkOther": null,
       "completed": false
     },
     {
@@ -2406,9 +2411,9 @@ const USERDATA = {
       "assignedTo": "Avery",
       "priority": 14,
       "category": "OPS",
-      "link-conf": null,
-      "link-jira": null,
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": null,
+      "linkOther": null,
       "completed": "2026-01-26"
     },
     {
@@ -2420,9 +2425,9 @@ const USERDATA = {
       "assignedTo": null,
       "priority": 15,
       "category": "REQ",
-      "link-conf": null,
-      "link-jira": null,
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": null,
+      "linkOther": null,
       "completed": "2026-01-17"
     },
     {
@@ -2434,9 +2439,9 @@ const USERDATA = {
       "assignedTo": "Sam",
       "priority": 10,
       "category": "DEV",
-      "link-conf": null,
-      "link-jira": "https://jira.example.com/browse/DEMO-163",
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": "https://jira.example.com/browse/DEMO-163",
+      "linkOther": null,
       "completed": false
     },
     {
@@ -2448,9 +2453,9 @@ const USERDATA = {
       "assignedTo": "Jordan",
       "priority": 30,
       "category": "DAT",
-      "link-conf": null,
-      "link-jira": null,
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": null,
+      "linkOther": null,
       "completed": false
     },
     {
@@ -2462,9 +2467,9 @@ const USERDATA = {
       "assignedTo": "Blake",
       "priority": 25,
       "category": "DOC",
-      "link-conf": "https://confluence.example.com/display/DEMO/Page+165",
-      "link-jira": null,
-      "link-other": "https://example.com/other/165",
+      "linkConf": "https://confluence.example.com/display/DEMO/Page+165",
+      "linkJira": null,
+      "linkOther": "https://example.com/other/165",
       "completed": "2026-01-08"
     },
     {
@@ -2476,9 +2481,9 @@ const USERDATA = {
       "assignedTo": "Morgan",
       "priority": 13,
       "category": "ARC",
-      "link-conf": null,
-      "link-jira": null,
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": null,
+      "linkOther": null,
       "completed": false
     },
     {
@@ -2490,9 +2495,9 @@ const USERDATA = {
       "assignedTo": "Quinn",
       "priority": 14,
       "category": "DEV",
-      "link-conf": null,
-      "link-jira": null,
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": null,
+      "linkOther": null,
       "completed": "2026-01-21"
     },
     {
@@ -2504,9 +2509,9 @@ const USERDATA = {
       "assignedTo": "Jordan",
       "priority": 18,
       "category": "DOC",
-      "link-conf": "https://confluence.example.com/display/DEMO/Page+168",
-      "link-jira": "https://jira.example.com/browse/DEMO-168",
-      "link-other": null,
+      "linkConf": "https://confluence.example.com/display/DEMO/Page+168",
+      "linkJira": "https://jira.example.com/browse/DEMO-168",
+      "linkOther": null,
       "completed": "2026-02-04"
     },
     {
@@ -2518,9 +2523,9 @@ const USERDATA = {
       "assignedTo": "Morgan",
       "priority": 15,
       "category": "ARC",
-      "link-conf": "https://confluence.example.com/display/DEMO/Page+169",
-      "link-jira": null,
-      "link-other": null,
+      "linkConf": "https://confluence.example.com/display/DEMO/Page+169",
+      "linkJira": null,
+      "linkOther": null,
       "completed": "2026-02-01"
     },
     {
@@ -2532,9 +2537,9 @@ const USERDATA = {
       "assignedTo": "SW Team Orion",
       "priority": 2,
       "category": "DOC",
-      "link-conf": null,
-      "link-jira": null,
-      "link-other": "https://example.com/other/170",
+      "linkConf": null,
+      "linkJira": null,
+      "linkOther": "https://example.com/other/170",
       "completed": false
     },
     {
@@ -2546,9 +2551,9 @@ const USERDATA = {
       "assignedTo": "Quinn",
       "priority": 24,
       "category": "OPS",
-      "link-conf": null,
-      "link-jira": null,
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": null,
+      "linkOther": null,
       "completed": "2026-01-15"
     },
     {
@@ -2560,9 +2565,9 @@ const USERDATA = {
       "assignedTo": "Riley, M",
       "priority": 22,
       "category": "REQ",
-      "link-conf": null,
-      "link-jira": null,
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": null,
+      "linkOther": null,
       "completed": false
     },
     {
@@ -2574,9 +2579,9 @@ const USERDATA = {
       "assignedTo": "Jordan",
       "priority": 16,
       "category": "ARC",
-      "link-conf": null,
-      "link-jira": "https://jira.example.com/browse/DEMO-173",
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": "https://jira.example.com/browse/DEMO-173",
+      "linkOther": null,
       "completed": "2026-01-27"
     },
     {
@@ -2588,9 +2593,9 @@ const USERDATA = {
       "assignedTo": "SW Team Orion",
       "priority": 20,
       "category": "DEV",
-      "link-conf": null,
-      "link-jira": null,
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": null,
+      "linkOther": null,
       "completed": false
     },
     {
@@ -2602,9 +2607,9 @@ const USERDATA = {
       "assignedTo": "Blake",
       "priority": 21,
       "category": "REQ",
-      "link-conf": null,
-      "link-jira": null,
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": null,
+      "linkOther": null,
       "completed": "2026-02-02"
     },
     {
@@ -2616,9 +2621,9 @@ const USERDATA = {
       "assignedTo": "Avery",
       "priority": 20,
       "category": "DEV",
-      "link-conf": null,
-      "link-jira": "https://jira.example.com/browse/DEMO-176",
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": "https://jira.example.com/browse/DEMO-176",
+      "linkOther": null,
       "completed": false
     },
     {
@@ -2630,9 +2635,9 @@ const USERDATA = {
       "assignedTo": "Blake",
       "priority": 11,
       "category": "SEC",
-      "link-conf": null,
-      "link-jira": "https://jira.example.com/browse/DEMO-177",
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": "https://jira.example.com/browse/DEMO-177",
+      "linkOther": null,
       "completed": false
     },
     {
@@ -2644,9 +2649,9 @@ const USERDATA = {
       "assignedTo": "Avery",
       "priority": 10,
       "category": "OPS",
-      "link-conf": null,
-      "link-jira": null,
-      "link-other": "https://example.com/other/178",
+      "linkConf": null,
+      "linkJira": null,
+      "linkOther": "https://example.com/other/178",
       "completed": false
     },
     {
@@ -2658,9 +2663,9 @@ const USERDATA = {
       "assignedTo": "Morgan",
       "priority": 18,
       "category": null,
-      "link-conf": null,
-      "link-jira": null,
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": null,
+      "linkOther": null,
       "completed": false
     },
     {
@@ -2672,9 +2677,9 @@ const USERDATA = {
       "assignedTo": "Sam",
       "priority": 4,
       "category": "ARC",
-      "link-conf": null,
-      "link-jira": null,
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": null,
+      "linkOther": null,
       "completed": "2026-01-13"
     },
     {
@@ -2686,9 +2691,9 @@ const USERDATA = {
       "assignedTo": "Riley, M",
       "priority": 3,
       "category": "TST",
-      "link-conf": null,
-      "link-jira": "https://jira.example.com/browse/DEMO-181",
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": "https://jira.example.com/browse/DEMO-181",
+      "linkOther": null,
       "completed": "2026-01-12"
     },
     {
@@ -2700,9 +2705,9 @@ const USERDATA = {
       "assignedTo": "Blake",
       "priority": 2,
       "category": null,
-      "link-conf": null,
-      "link-jira": null,
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": null,
+      "linkOther": null,
       "completed": false
     },
     {
@@ -2714,9 +2719,9 @@ const USERDATA = {
       "assignedTo": "Jordan",
       "priority": 2,
       "category": "DEV",
-      "link-conf": null,
-      "link-jira": null,
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": null,
+      "linkOther": null,
       "completed": false
     },
     {
@@ -2728,9 +2733,9 @@ const USERDATA = {
       "assignedTo": "Avery",
       "priority": 23,
       "category": "DEV",
-      "link-conf": "https://confluence.example.com/display/DEMO/Page+184",
-      "link-jira": "https://jira.example.com/browse/DEMO-184",
-      "link-other": "https://example.com/other/184",
+      "linkConf": "https://confluence.example.com/display/DEMO/Page+184",
+      "linkJira": "https://jira.example.com/browse/DEMO-184",
+      "linkOther": "https://example.com/other/184",
       "completed": "2026-01-21"
     },
     {
@@ -2742,9 +2747,9 @@ const USERDATA = {
       "assignedTo": "Avery",
       "priority": 13,
       "category": "PMA",
-      "link-conf": "https://confluence.example.com/display/DEMO/Page+185",
-      "link-jira": null,
-      "link-other": null,
+      "linkConf": "https://confluence.example.com/display/DEMO/Page+185",
+      "linkJira": null,
+      "linkOther": null,
       "completed": "2026-01-04"
     },
     {
@@ -2756,9 +2761,9 @@ const USERDATA = {
       "assignedTo": "Blake",
       "priority": 16,
       "category": null,
-      "link-conf": null,
-      "link-jira": "https://jira.example.com/browse/DEMO-186",
-      "link-other": "https://example.com/other/186",
+      "linkConf": null,
+      "linkJira": "https://jira.example.com/browse/DEMO-186",
+      "linkOther": "https://example.com/other/186",
       "completed": false
     },
     {
@@ -2770,9 +2775,9 @@ const USERDATA = {
       "assignedTo": "Quinn",
       "priority": 2,
       "category": "DOC",
-      "link-conf": "https://confluence.example.com/display/DEMO/Page+187",
-      "link-jira": null,
-      "link-other": "https://example.com/other/187",
+      "linkConf": "https://confluence.example.com/display/DEMO/Page+187",
+      "linkJira": null,
+      "linkOther": "https://example.com/other/187",
       "completed": "2026-01-14"
     },
     {
@@ -2784,9 +2789,9 @@ const USERDATA = {
       "assignedTo": null,
       "priority": 18,
       "category": "OPS",
-      "link-conf": null,
-      "link-jira": null,
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": null,
+      "linkOther": null,
       "completed": false
     },
     {
@@ -2798,9 +2803,9 @@ const USERDATA = {
       "assignedTo": "Avery",
       "priority": 12,
       "category": "SEC",
-      "link-conf": null,
-      "link-jira": "https://jira.example.com/browse/DEMO-189",
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": "https://jira.example.com/browse/DEMO-189",
+      "linkOther": null,
       "completed": false
     },
     {
@@ -2812,9 +2817,9 @@ const USERDATA = {
       "assignedTo": "Sam",
       "priority": 23,
       "category": "OPS",
-      "link-conf": "https://confluence.example.com/display/DEMO/Page+190",
-      "link-jira": "https://jira.example.com/browse/DEMO-190",
-      "link-other": null,
+      "linkConf": "https://confluence.example.com/display/DEMO/Page+190",
+      "linkJira": "https://jira.example.com/browse/DEMO-190",
+      "linkOther": null,
       "completed": "2026-01-31"
     },
     {
@@ -2826,9 +2831,9 @@ const USERDATA = {
       "assignedTo": "Quinn",
       "priority": 7,
       "category": "REQ",
-      "link-conf": null,
-      "link-jira": null,
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": null,
+      "linkOther": null,
       "completed": "2026-01-21"
     },
     {
@@ -2840,9 +2845,9 @@ const USERDATA = {
       "assignedTo": "Jordan",
       "priority": 2,
       "category": "ARC",
-      "link-conf": null,
-      "link-jira": null,
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": null,
+      "linkOther": null,
       "completed": "2026-01-24"
     },
     {
@@ -2854,9 +2859,9 @@ const USERDATA = {
       "assignedTo": "Morgan",
       "priority": 12,
       "category": "PMA",
-      "link-conf": null,
-      "link-jira": null,
-      "link-other": "https://example.com/other/193",
+      "linkConf": null,
+      "linkJira": null,
+      "linkOther": "https://example.com/other/193",
       "completed": false
     },
     {
@@ -2868,9 +2873,9 @@ const USERDATA = {
       "assignedTo": "Blake",
       "priority": 8,
       "category": "REQ",
-      "link-conf": "https://confluence.example.com/display/DEMO/Page+194",
-      "link-jira": null,
-      "link-other": null,
+      "linkConf": "https://confluence.example.com/display/DEMO/Page+194",
+      "linkJira": null,
+      "linkOther": null,
       "completed": false
     },
     {
@@ -2882,9 +2887,9 @@ const USERDATA = {
       "assignedTo": "Sam",
       "priority": 13,
       "category": "SEC",
-      "link-conf": null,
-      "link-jira": "https://jira.example.com/browse/DEMO-195",
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": "https://jira.example.com/browse/DEMO-195",
+      "linkOther": null,
       "completed": "2026-01-20"
     },
     {
@@ -2896,9 +2901,9 @@ const USERDATA = {
       "assignedTo": "Blake",
       "priority": 20,
       "category": "ARC",
-      "link-conf": null,
-      "link-jira": null,
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": null,
+      "linkOther": null,
       "completed": "2026-01-06"
     },
     {
@@ -2910,9 +2915,9 @@ const USERDATA = {
       "assignedTo": null,
       "priority": 0,
       "category": "PMA",
-      "link-conf": null,
-      "link-jira": "https://jira.example.com/browse/DEMO-197",
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": "https://jira.example.com/browse/DEMO-197",
+      "linkOther": null,
       "completed": "2026-01-15"
     },
     {
@@ -2924,9 +2929,9 @@ const USERDATA = {
       "assignedTo": "Riley, M",
       "priority": 25,
       "category": "DAT",
-      "link-conf": null,
-      "link-jira": null,
-      "link-other": null,
+      "linkConf": null,
+      "linkJira": null,
+      "linkOther": null,
       "completed": false
     },
     {
@@ -2938,9 +2943,9 @@ const USERDATA = {
       "assignedTo": "SW Team Orion",
       "priority": 5,
       "category": "OPS",
-      "link-conf": "https://confluence.example.com/display/DEMO/Page+199",
-      "link-jira": null,
-      "link-other": null,
+      "linkConf": "https://confluence.example.com/display/DEMO/Page+199",
+      "linkJira": null,
+      "linkOther": null,
       "completed": false
     },
     {
@@ -2952,9 +2957,9 @@ const USERDATA = {
       "assignedTo": "Quinn",
       "priority": 29,
       "category": "DAT",
-      "link-conf": "https://confluence.example.com/display/DEMO/Page+200",
-      "link-jira": null,
-      "link-other": null,
+      "linkConf": "https://confluence.example.com/display/DEMO/Page+200",
+      "linkJira": null,
+      "linkOther": null,
       "completed": false
     }
   ],

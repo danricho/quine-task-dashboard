@@ -47,15 +47,23 @@ def inline_html(in_path: str, out_path: str) -> Path:
     def replace_script_src(match: re.Match) -> str:
         tag = match.group(0)
         src = match.group("src").strip()
+
+        # ---- Ignore autoload scripts ----
+        if "autoload" in os.path.basename(src).lower():
+            print(f"[skip] Ignoring autoload script: {src}")
+            return tag
+
         if not is_local_href(src):
             return tag
+
         js_file = (html_path.parent / src).resolve()
         if not js_file.exists():
             print(f"[warn] JS not found: {js_file}")
             return tag
+
         js = read_text(js_file)
-        # js = jsmin(js)
         return f"<script>{js}</script>"
+
 
     script_re = re.compile(
         r'<script\s+[^>]*src=["\'](?P<src>[^"\']+)["\'][^>]*>\s*</script>',
