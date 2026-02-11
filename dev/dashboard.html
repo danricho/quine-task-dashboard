@@ -1,783 +1,940 @@
-<!DOCTYPE html>
-<html lang="en" data-theme="light"><head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="color-scheme" content="light dark">
-  <title></title>
-  <meta name="description" content="A class-less example, without dependencies.">
-  <link rel="stylesheet" href="static/css/pico.min.css">
-  <link rel="stylesheet" href="static/css/pico.colors.min.css">
-  <link rel="stylesheet" href="static/css/pico.ext.font-change-cairo-online.css">
-  <link rel="stylesheet" href="static/css/pico.ext.button-colors.css">
-  <link rel="stylesheet" href="static/css/pico.ext.responsive-visibility.css">
-  <link rel="stylesheet" href="static/css/pico.ext.flexbox-utilities.css">
-  <link rel="stylesheet" href="static/css/pico.ext.toasts.css">
-  <link rel="stylesheet" href="static/css/switcher-expand.min.css">   
-  <link rel="stylesheet" href="static/css/sidebar.css">   
-  <link rel="stylesheet" href="static/css/pico.ext.printing.css">
-  <link rel="stylesheet" href="static/css/d3-milestones.css">
-  <link rel="stylesheet" href="static/css/app.css">   
+<!doctype html>
+<html lang="en">
 
-  <link rel="icon" type="image/svg+xml" href="static/images/icon.svg">   
-  <script src="static/js/jquery_3.7.0.min.js"></script> 
-  <script src="static/js/Sortable.min.js"></script> 
-  <script src="static/js/jquery.editable.min.js"></script> 
-  <script src="static/js/d3-milestones.min.js"></script>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Demo Title</title>
 
-  <script>
-    // Alias the library function before our dashboard defines const milestones = [...]
-    window.milestonesViz = window.milestones; // keep a reference to the library factory
-  </script>
+    <script src="static/js/tailwind-browser@4.min.js"></script>
+    <link rel="stylesheet" href="static/css/basecoat.cdn.min.css" />
+    
+    <link rel="stylesheet" href="static/css/font-cairo-online.css">
+    <link rel="stylesheet" href="static/css/d3-milestones.css">
+    <link rel="stylesheet" href="static/css/app.css" />        
 
-</head>
+    <script src="static/js/basecoat-css@0.3.10.all.min.js"></script>
+    <script src="static/js/jquery-3.7.1.min.js"></script>
+    <script src="static/js/Sortable.min.js"></script>
+    <script src="static/js/d3-milestones.min.js"></script><script>window.milestonesViz = window.milestones;</script>
 
-<body>
-        
-<div id="container">
+    <!-- data -->
+    <script src="dataset-empty.js"></script>
+    <!-- end data -->
 
-    <div style="display: none;" id="hidden-templates">
-      <div role="group" style="margin-top: 0.25rem;" class="no-print" id="addTaskInputs">
-        <input type="text" class="tsk-name">
-        <select class="tsk-milestone"></select>
-        <input type="date" class="tsk-date">
-        <select class="tsk-category"></select>
-        <button id="addTask" class="addTask" data-allocation="">Add</button>
+    <!-- These are for testing of dev only... -->
+    <!-- <script src="data/autoload-USERDATA-sample-small.js"></script> -->
+    <!-- <script src="data/autoload-USERDATA-sample-extended.js"></script> -->
+
+    <script src="static/js/app.js"></script>
+    
+  </head>
+
+  <body>
+
+    <header class="topbar">
+      <div class="flex items-center gap-5">
+        <div id="heading-logo"></div>
+        <div class="font-semibold tracking-tight" id="heading-title">Demo Title</div>
+        <div class="text-sm tracking-tight text-neutral-500/70">@ <span id="last-saved"></span></div>
       </div>
-    </div>
+      <div class="flex items-center gap-2">        
+        <button type="button" aria-label="Toggle side bar" data-tooltip="Toggle side bar" data-side="bottom" data-align="end" onclick="document.dispatchEvent(new CustomEvent('basecoat:sidebar'))" class="btn-icon-outline size-8">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"></rect><path d="M9 3v18"></path></svg>
+        </button>
+        <button type="button" aria-label="Toggle dark mode" data-tooltip="Toggle dark mode" data-side="bottom" data-align="end" onclick="document.dispatchEvent(new CustomEvent('basecoat:theme'))" class="btn-icon-outline size-8">
+          <span class="hidden dark:block"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4" /><path d="M12 2v2" /><path d="M12 20v2" /><path d="m4.93 4.93 1.41 1.41" /><path d="m17.66 17.66 1.41 1.41" /><path d="M2 12h2" /><path d="M20 12h2" /><path d="m6.34 17.66-1.41 1.41" /><path d="m19.07 4.93-1.41 1.41" /></svg></span>
+          <span class="block dark:hidden"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" /></svg></span>
+        </button>
+      </div>
+    </header>
 
-    <div id="sidebar" class="no-print" style="border-right: var(--pico-border-width) solid var(--pico-card-border-color); width: 244px;">
-      <div class="flex items-center" style="margin: 2rem 0;">
-        <div id="logo"></div>
-        <div class="flex-grow">
-          <h5 style="margin: 0 1rem;"><span id="pageTitle" data-edit-event="dblclick.textEditor"></span></h5>
-        </div>
-        <div class="theme-toggle" title="Toggle theme" style="margin: 0 0rem;">
-          <span class="theme-toggle-sr">Toggle theme</span>
-          <svg xmlns="http://www.w3.org/2000/svg" aria-hidden="true" width="1em" height="1em" fill="currentColor" class="theme-toggle__expand" viewBox="0 0 32 32">
-            <clipPath id="theme-toggle__expand__cutout">
-              <path d="M0-11h25a1 1 0 0017 13v30H0Z"></path>
-            </clipPath>
-            <g clip-path="url(#theme-toggle__expand__cutout)">
-              <circle cx="16" cy="16" r="8.4"></circle>
-              <path d="M18.3 3.2c0 1.3-1 2.3-2.3 2.3s-2.3-1-2.3-2.3S14.7.9 16 .9s2.3 1 2.3 2.3zm-4.6 25.6c0-1.3 1-2.3 2.3-2.3s2.3 1 2.3 2.3-1 2.3-2.3 2.3-2.3-1-2.3-2.3zm15.1-10.5c-1.3 0-2.3-1-2.3-2.3s1-2.3 2.3-2.3 2.3 1 2.3 2.3-1 2.3-2.3 2.3zM3.2 13.7c1.3 0 2.3 1 2.3 2.3s-1 2.3-2.3 2.3S.9 17.3.9 16s1-2.3 2.3-2.3zm5.8-7C9 7.9 7.9 9 6.7 9S4.4 8 4.4 6.7s1-2.3 2.3-2.3S9 5.4 9 6.7zm16.3 21c-1.3 0-2.3-1-2.3-2.3s1-2.3 2.3-2.3 2.3 1 2.3 2.3-1 2.3-2.3 2.3zm2.4-21c0 1.3-1 2.3-2.3 2.3S23 7.9 23 6.7s1-2.3 2.3-2.3 2.4 1 2.4 2.3zM6.7 23C8 23 9 24 9 25.3s-1 2.3-2.3 2.3-2.3-1-2.3-2.3 1-2.3 2.3-2.3z"></path>
-            </g>
+    <aside class="sidebar">
+      <nav>
+        <section>
+          <div role="group" class="p-5">
+            <ul class="mb-6">
+              <li><a href="#milestones"><span>Milestones</span></a></li>
+              <li>
+                <details id="allocations-menu" open>
+                  <summary aria-current="page">Task Allocations</summary>
+                  <ul id="menu-allocations-list"></ul>
+                </details>
+              </li>
+              <li><a href="#completed"><span>Completed Tasks</span></a></li>
+            </ul>
+            <div class="py-6 flex flex-col gap-2 border-t">
+              <div role="group" class="button-group">
+                <button type="button" id="button-filter-config" class="btn-secondary" onclick="setupAndShowFiltersModal();">Task Filters</button>
+                <button type="button" id="button-filter-clear" class="btn-primary" onclick="clearTaskFilters();">Clear</button>
+              </div>              
+            </div>
+            <div class="py-6 flex flex-col gap-2 border-t">
+              <div role="group" class="button-group">
+                <button type="button" class="btn-secondary" disabled id="button-save" data-tooltip="Save (Quine) this File" data-align="start" onclick="quineSavePage();">Save</button>
+                <button type="button" class="btn-secondary" id="button-save-read-only" data-tooltip="Save read-only version" data-align="center" onclick="quineSavePage(true);">Read Only</button>
+              </div>
+              <button type="button" class="btn-secondary w-fit" id="button-export-clipboard" data-tooltip="Copy friendly data to clipboard" data-align="center" onclick="exportHTMLSummary()">Copy to Clipboard</button>              
+            </div>
+
+            <div class="py-6 flex flex-col gap-2 border-t">
+              <ul>
+                <li>
+                  <details id="configurations-menu">
+                    <summary aria-current="page">Configuration</summary>
+                    <ul>
+                      <li><a href onclick="setupResourcesModal(); return false;"><span>Resources</span></a></li>
+                      <li><a href onclick="setupCategoriesModal(); return false;"><span>Categories</span></a></li>
+                      <li><a href onclick="setupConfigModal(); return false;"><span>General</span></a></li>
+                    </ul>
+                    <div role="group" class="button-group mt-3">
+                      <button type="button" class="btn-secondary" id="import-json" data-tooltip="Import Userdata from JSON file" data-align="start" >Import</button>
+                      <button type="button" class="btn-secondary" id="export-json" data-tooltip="Export Userdata to JSON file" data-align="center" >Export</button>
+                    </div>
+                  </details>
+                </li>
+              </ul>              
+            </div>
+
+            <div class="py-6 text-sm border-t">
+              <p><a class="text-neutral-500/75 hover:text-neutral-500 hover:underline decoration-solid cursor-pointer" data-tooltip="Quine Task Dashboard on GitHub" data-align="start" 
+                 href="https://github.com/danricho/quine-task-dashboard" target="_blank">Quine Task Dashboard <span id='version'>v2.0.0</span></a></p>
+              <p><a class="text-neutral-500/75 hover:text-neutral-500 hover:underline decoration-solid cursor-pointer" data-tooltip="danricho on GitHub" data-align="start" 
+                 href="https://github.com/danricho" target="_blank">danricho, 2026</a></p>
+            </div>
+            <!-- This is hidden normally... turn on to help with deveopment -->
+            <div class="py-6 border-t hidden">
+              <details>
+                <summary data-tooltip="Remove before commit!" data-align="start"><h4>Dev Functions</h4></summary>
+                <div class="flex flex-col gap-2 my-3">
+                  <button type="button" class="btn-secondary w-fit" onclick="$('#dialog-add-milestone').get(0).showModal();">Show Add Milestone Modal</button>
+                  <button type="button" class="btn-secondary w-fit" onclick="$('#dialog-add-task').get(0).showModal();">Show Add Task Modal</button>
+                  <button type="button" class="btn-secondary w-fit" onclick="$('#dialog-edit-task').get(0).showModal();">Show Edit Task Modal</button>
+                  <button type="button" class="btn-secondary w-fit" onclick="$('#dialog-task-timeline').get(0).showModal();">Show Task Timeline Modal</button>
+                  <button type="button" class="btn-secondary w-fit" onclick="$('#alert-complete-task').get(0).showModal();">Show Task Complete Alert</button>
+                  <button type="button" class="btn-secondary w-fit" onclick="$('#alert-delete-task').get(0).showModal();">Show Task Delete Alert</button>
+                  <div role="group" class="button-group">
+                    <button type="button" class="btn-secondary" onclick="updatePage();">Update Page</button>
+                    <button type="button" class="btn-secondary" onclick="sanitizeDOM();">Sanitize!</button>
+                  </div>
+                  <div>
+                    <a class="text-sky-500/80 hover:text-sky-500 underline decoration-solid cursor-pointer" href="https://basecoatui.com/" target="_blank">Basecoat</a><br />
+                    <a class="text-sky-500/80 hover:text-sky-500 underline decoration-solid cursor-pointer" href="https://tailwindcss.com/docs/installation/using-vite" target="_blank">Tailwind</a>
+                  </div>
+                </div>
+              </details>
+            </div>
+          </div>
+        </section>
+      </nav>
+    </aside>
+
+    <main>
+      <div class="m-5 p-3 flex flex-col gap-12">
+
+        <section id="milestones">
+
+          <div id="ms-title" class="flex gap-3 items-baseline">
+            <h1 class="shrink mb-3">Milestones</h1>
+            <small style="opacity: 0.7;">(<span class="count"></span> milestones)</small>
+            <div class="grow flex gap-3 justify-end items-baseline"></div>
+          </div>
+
+
+          <div class="flex flex-col gap-3">
+
+            <div class="tabs w-full">
+              <nav role="tablist" aria-orientation="horizontal" class="w-full">
+                <button type="button" role="tab" id="milestones-tab-2" aria-controls="milestones-panel-2" aria-selected="true" tabindex="0">Timeline</button>
+                <button type="button" role="tab" id="milestones-tab-1" aria-controls="milestones-panel-1" aria-selected="false" tabindex="0">List / Edit</button>
+              </nav>
+
+              <div role="tabpanel" id="milestones-panel-2" aria-labelledby="milestones-tab-2" tabindex="-1" aria-selected="true">
+                <section class="my-2">
+                  <div>
+                    <div id="milestoneTimeline" style="position: relative;"></div>
+                  </div>
+                </section>
+              </div>
+
+              <div role="tabpanel" id="milestones-panel-1" aria-labelledby="milestones-tab-1" tabindex="-1" aria-selected="false" hidden>
+                <section class="my-2">
+                  <div id="milestone-list" class="flex flex-col gap-1"></div>
+                </section>
+              </div>
+            </div>
+
+            <div>
+              <button type="button" onclick="document.getElementById('dialog-add-milestone').showModal()" class="add-milestone btn-secondary">Add a Milestone</button>
+            </div>
+          </div>
+
+        </section>
+
+        <section id="allocations">
+          <div id="alloc-title" class="flex gap-3 items-baseline">
+            <h1 class="shrink mb-3">Task Allocations</h1>
+            <small style="opacity: 0.7;">(<span class="count"></span> tasks)</small>
+            <div class="grow flex gap-3 justify-end items-baseline"></div>
+          </div>          
+          <div id="allocations-list" class="flex flex-col gap-9"></div>
+        </section>
+
+        <section id="completed">
+          <div id="complete-title" class="flex gap-3 items-baseline">
+            <h1 class="shrink mb-3">Completed Tasks</h1>
+            <small style="opacity: 0.7;">(<span class="count"></span> tasks)</small>
+            <div class="grow flex gap-3 justify-end items-baseline"></div>
+          </div>
+          <div class="flex flex-col gap-5">
+
+            <div class="flex justify-between">
+              <button type="button" class="show-completed-tasks btn-secondary">Show Completed Task List</button>
+              <div id="old-task-deletion-group" class="relative hidden">
+                <div class="button-group">
+                  <input type="date" class="input pl-25" id="remove-complete-tasks-threshold-date">
+                  <div class="absolute left-3 top-1/2 -translate-y-1/2 opacity-80 text-sm cursor-default" data-tooltip="Checks task's completion date otherwise uses key date">Before date: </div>
+                  <button id="remove-complete-tasks-button" type="button" class="btn">Delete</button>
+                </div>
+              </div>
+            </div>
+
+            <div id="completed-task-list" class="flex flex-col gap-1"></div>
+
+          </div>
+        </section>
+
+      </div>
+    </main>
+
+    <dialog id="dialog-add-milestone" class="dialog w-full sm:max-w-[425px] max-h-[612px]" 
+            aria-labelledby="dialog-add-milestone-title" aria-describedby="dialog-add-milestone-description" onclick="if (event.target === this) this.close()">
+      <div class="max-w-200">
+        <header>
+          <h2 id="dialog-add-milestone-title">Add a Milestone</h2>
+          <p id="dialog-add-milestone-description">Add a milestone here. Click save when you're done.</p>
+        </header>
+
+        <section class="my-4">
+          <form class="form flex flex-col gap-8">
+            <div class="flex flex-col gap-2">
+              <label for="dialog-add-milestone-name">Name</label>
+              <input type="text" value=""" id="dialog-add-milestone-name" autofocus />
+            </div>
+            <div class="flex flex-col gap-2">
+              <label for="dialog-add-milestone-date">Date (optional)</label>
+              <input type="date" id="dialog-add-milestone-date">              
+            </div>
+            <div class="flex gap-3">
+              <label for="dialog-add-milestone-tentative">Tentative milestone</label>
+              <input type="checkbox" id="dialog-add-milestone-tentative" role="switch">
+            </div>
+            <div class="flex flex-col gap-2">
+              Link
+              <div class="relative">
+                <input type="url" class="input pl-9"  id="dialog-add-milestone-other">
+                <div class="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-muted-foreground [&>svg]:size-4">
+                  <svg class="text-sky-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" style="height: 1em;" fill="none">
+                    <path d="M7.24989 12C7.24989 11.59 7.58989 11.25 7.99989 11.25H10.9999V7.5C10.9999 6.95 10.5499 6.5 9.99989 6.5H7.76989C4.61989 6.5 1.87989 9.08 1.99989 12.22C2.05989 13.65 2.65989 14.94 3.60989 15.89C4.60989 16.88 5.97989 17.5 7.49989 17.5H9.99989C10.5499 17.5 10.9999 17.05 10.9999 16.5V12.75H7.99989C7.58989 12.75 7.24989 12.41 7.24989 12Z" fill="currentColor"/>
+                    <path d="M20.39 8.11C19.39 7.12 18.02 6.5 16.5 6.5H14C13.45 6.5 13 6.95 13 7.5V11.25H16C16.41 11.25 16.75 11.59 16.75 12C16.75 12.41 16.41 12.75 16 12.75H13V16.5C13 17.05 13.45 17.5 14 17.5H16.23C19.38 17.5 22.12 14.92 21.99 11.78C21.94 10.35 21.33 9.06 20.39 8.11Z" fill="currentColor"/>
+                    <path d="M13 11.25H11V12.75H13V11.25Z" fill="currentColor"/>
+                  </svg>
+                </div>
+              </div>
+            </div>
+          </form>
+        </section>       
+
+        <footer>
+          <button class="btn-secondary" onclick="this.closest('dialog').close()">Cancel</button>
+          <button class="btn" onclick="addMilestone(); this.closest('dialog').close()">Add Milestone</button>
+        </footer>
+
+        <button type="button" aria-label="Close dialog" onclick="this.closest('dialog').close()">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x-icon lucide-x"><path d="M18 6 6 18" /><path d="m6 6 12 12" /></svg>
+        </button>
+      </div>
+    </dialog>
+    <dialog id="dialog-edit-milestone" class="dialog w-full sm:max-w-[425px] max-h-[612px]" aria-labelledby="dialog-edit-milestone-title" aria-describedby="dialog-edit-milestone-description" onclick="if (event.target === this) this.close()">
+      <div class="max-w-200">
+        <header>
+          <h2 id="dialog-edit-milestone-title">Edit Milestone<span class="name"></span></h2>
+          <p id="dialog-edit-milestone-description">Editing Milestone: <span class="font-semibold" id="dialog-edit-milestone-name-disp">WHICH</span>.<br />Click save when you're done.</p>
+        </header>
+
+        <section class="my-4">
+          <form class="form flex flex-col gap-8">
+
+            <div class="hidden"><input type="text" id="dialog-edit-milestone-id" /></div>
+
+            <div class="flex flex-col gap-2">
+              <label for="dialog-edit-milestone-name">Name</label>
+              <input type="text" id="dialog-edit-milestone-name" autofocus />
+            </div>
+
+            <div class="flex flex-col gap-2">
+              <label for="dialog-edit-milestone-date">Date (optional)</label>
+              <input type="date" id="dialog-edit-milestone-date">
+            </div>
+            <div class="flex gap-3">
+              <label for="dialog-edit-milestone-tentative">Tentative milestone</label>
+              <input type="checkbox" id="dialog-edit-milestone-tentative" role="switch">
+            </div>
+
+            <div class="flex flex-col gap-2">
+              Link
+              <div class="relative">
+                <input type="url" class="input pl-9"  id="dialog-edit-milestone-other">
+                <div class="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-muted-foreground [&>svg]:size-4">
+                  <svg class="text-sky-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" style="height: 1em;" fill="none">
+                    <path d="M7.24989 12C7.24989 11.59 7.58989 11.25 7.99989 11.25H10.9999V7.5C10.9999 6.95 10.5499 6.5 9.99989 6.5H7.76989C4.61989 6.5 1.87989 9.08 1.99989 12.22C2.05989 13.65 2.65989 14.94 3.60989 15.89C4.60989 16.88 5.97989 17.5 7.49989 17.5H9.99989C10.5499 17.5 10.9999 17.05 10.9999 16.5V12.75H7.99989C7.58989 12.75 7.24989 12.41 7.24989 12Z" fill="currentColor"/>
+                    <path d="M20.39 8.11C19.39 7.12 18.02 6.5 16.5 6.5H14C13.45 6.5 13 6.95 13 7.5V11.25H16C16.41 11.25 16.75 11.59 16.75 12C16.75 12.41 16.41 12.75 16 12.75H13V16.5C13 17.05 13.45 17.5 14 17.5H16.23C19.38 17.5 22.12 14.92 21.99 11.78C21.94 10.35 21.33 9.06 20.39 8.11Z" fill="currentColor"/>
+                    <path d="M13 11.25H11V12.75H13V11.25Z" fill="currentColor"/>
+                  </svg>
+                </div>
+              </div>
+            </div>
+
+          </form>
+
+        </section>
+
+        <footer>
+          <button class="btn-secondary" onclick="this.closest('dialog').close()">Cancel</button>
+          <button class="btn" onclick="saveEditedMilestone(); this.closest('dialog').close()">Save changes</button>
+        </footer>
+
+        <button type="button" aria-label="Close dialog" onclick="this.closest('dialog').close()">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x-icon lucide-x"><path d="M18 6 6 18" /><path d="m6 6 12 12" /></svg>
+        </button>
+      </div>
+    </dialog>
+    <dialog id="alert-delete-milestone" class="dialog" aria-labelledby="alert-delete-milestone-title" aria-describedby="alert-delete-milestone-description" onclick="if (event.target === this) this.close()">
+      <div class="max-w-200">
+        <header>
+          <h2 id="alert-delete-milestone-title">Are you sure?</h2>
+          <div id="alert-delete-milestone-description" class="my-3">
+          <p>This action <strong>cannot be undone</strong>.</p>
+          <p>This will permanently delete <strong id="alert-delete-milestone-name"></strong>.</p>
+          <p class="linked hidden my-2 text-red-600"><strong><span class="count"></span> tasks are currently linked to this milestone.</strong><br />These tasks will have the date from this milestone applied to them if this milestone is deleted.</p>
+          </div>
+        </header>
+
+        <footer>
+          <button class="btn-secondary" onclick="this.closest('dialog').close()">Cancel, I still want it</button>
+          <button class="confirm btn-destructive">Yes, delete it</button>
+        </footer>
+      </div>
+    </dialog>
+    <dialog id="dialog-add-task" class="dialog w-full sm:max-w-[425px] max-h-[612px]" aria-labelledby="dialog-add-task-title" aria-describedby="dialog-add-task-description" onclick="if (event.target === this) this.close()">
+      <div class="max-w-200">
+        <header>
+          <h2 id="dialog-add-task-title">Add a Task</h2>
+          <p id="dialog-add-task-description">Add a task.<br />Click save when you're done.</p>
+        </header>
+
+        <section class="my-4">
+          <form class="form flex flex-col gap-8">
+
+            <div class="flex flex-col gap-2">
+              <label for="dialog-add-task-name">Name</label>
+              <input type="text" id="dialog-add-task-name" autofocus />
+            </div>
+
+            <div class="flex flex-col gap-2">
+              <label for="dialog-add-task-assigned">Allocated to</label>
+              <select class="select-resources" id="dialog-add-task-assigned"></select>
+            </div>
+
+            <div class="flex flex-col gap-2">
+              <label for="dialog-add-task-milestone">Milestone (optional: overrides any direct date)</label>
+              <select class="select-milestone" id="dialog-add-task-milestone"></select>
+            </div>
+
+            <div class="flex flex-col gap-2">
+              <label for="dialog-add-task-date">Date (optional)</label>
+              <input type="date" id="dialog-add-task-date">
+            </div>
+
+            <div class="flex flex-col gap-2">
+              <label for="dialog-add-task-category">Category (optional)</label>
+              <select class="select-category" id="dialog-add-task-category"></select>
+              <label>
+            </div>
+
+            <div class="flex gap-3">
+              <label for="dialog-add-task-completed">Task is completed</label>
+              <input type="checkbox" id="dialog-add-task-completed" role="switch">
+            </div>
+
+            <div class="flex flex-col gap-2">
+              Links
+              <div class="relative">
+                <input type="url" class="input pl-9"  id="dialog-add-task-confluence">
+                <div class="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-muted-foreground [&>svg]:size-4">
+                  <svg class="text-sky-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 50 50" style="height: 1em;" fill="currentColor">
+                    <path d="M 36.988281 2.9902344 C 36.519863 3.0093652 36.069688 3.2528906 35.804688 3.6816406 C 35.800688 3.6886406 35.795016 3.6941719 35.791016 3.7011719 C 35.411016 4.3361719 34.921672 5.1619219 34.388672 6.0449219 C 30.470672 13.059922 26.844437 11.486422 20.023438 8.2324219 L 10.609375 4.1308594 C 9.881375 3.7848594 9.0091094 4.0933125 8.6621094 4.8203125 C 8.6541094 4.8343125 8.6485781 4.846375 8.6425781 4.859375 L 4.1210938 14.705078 C 3.8020938 15.435078 4.1275625 16.285188 4.8515625 16.617188 C 6.8375625 17.551188 10.789703 19.411953 14.345703 21.126953 C 27.142703 27.335953 38.016938 26.934063 46.335938 13.414062 C 46.810938 12.641063 47.343875 11.742344 47.796875 11.027344 C 48.201875 10.343344 47.985594 9.4609687 47.308594 9.0429688 L 37.814453 3.2050781 C 37.557203 3.0464531 37.269332 2.9787559 36.988281 2.9902344 z M 21.050781 25.003906 C 14.442609 25.143818 8.6034688 28.546719 3.6640625 36.574219 C 3.1890625 37.347219 2.656125 38.245938 2.203125 38.960938 C 1.798125 39.644937 2.0144063 40.527312 2.6914062 40.945312 L 12.185547 46.783203 C 12.871547 47.206203 13.771312 46.994594 14.195312 46.308594 C 14.199312 46.301594 14.204984 46.294109 14.208984 46.287109 C 14.588984 45.652109 15.078328 44.828312 15.611328 43.945312 C 19.529328 36.930312 23.155563 38.501859 29.976562 41.755859 L 39.390625 45.859375 C 40.118625 46.205375 40.990891 45.896922 41.337891 45.169922 L 41.355469 45.130859 L 45.876953 35.285156 C 46.195953 34.555156 45.870484 33.705047 45.146484 33.373047 C 43.160484 32.439047 39.208344 30.578281 35.652344 28.863281 C 30.454375 26.340062 25.572162 24.908177 21.050781 25.003906 z"></path>
+                  </svg>
+                </div>
+              </div>
+              <div class="relative">
+                <input type="url" class="input pl-9"  id="dialog-add-task-jira">
+                <div class="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-muted-foreground [&>svg]:size-4">
+                  <svg class="text-sky-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" style="height: 1em;" fill="currentColor">
+                    <path d="M11.53,2a4.37,4.37,0,0,0,4.35,4.35h1.78v1.7A4.35,4.35,0,0,0,22,12.4V2.84A.85.85,0,0,0,21.16,2H11.53M6.77,6.8a4.36,4.36,0,0,0,4.34,4.34h1.8v1.72a4.36,4.36,0,0,0,4.34,4.34V7.63a.84.84,0,0,0-.83-.83H6.77M2,11.6a4.34,4.34,0,0,0,4.35,4.34H8.13v1.72A4.36,4.36,0,0,0,12.47,22V12.43a.85.85,0,0,0-.84-.84H2Z"></path>
+                  </svg>
+                </div>
+              </div>
+              <div class="relative">
+                <input type="url" class="input pl-9"  id="dialog-add-task-other">
+                <div class="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-muted-foreground [&>svg]:size-4">
+                  <svg class="text-sky-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" style="height: 1em;" fill="none">
+                    <path d="M7.24989 12C7.24989 11.59 7.58989 11.25 7.99989 11.25H10.9999V7.5C10.9999 6.95 10.5499 6.5 9.99989 6.5H7.76989C4.61989 6.5 1.87989 9.08 1.99989 12.22C2.05989 13.65 2.65989 14.94 3.60989 15.89C4.60989 16.88 5.97989 17.5 7.49989 17.5H9.99989C10.5499 17.5 10.9999 17.05 10.9999 16.5V12.75H7.99989C7.58989 12.75 7.24989 12.41 7.24989 12Z" fill="currentColor"/>
+                    <path d="M20.39 8.11C19.39 7.12 18.02 6.5 16.5 6.5H14C13.45 6.5 13 6.95 13 7.5V11.25H16C16.41 11.25 16.75 11.59 16.75 12C16.75 12.41 16.41 12.75 16 12.75H13V16.5C13 17.05 13.45 17.5 14 17.5H16.23C19.38 17.5 22.12 14.92 21.99 11.78C21.94 10.35 21.33 9.06 20.39 8.11Z" fill="currentColor"/>
+                    <path d="M13 11.25H11V12.75H13V11.25Z" fill="currentColor"/>
+                  </svg>
+                </div>
+              </div>
+            </div>
+
+          </form>
+
+        </section>
+
+        <footer>
+          <button class="btn-secondary" onclick="this.closest('dialog').close()">Cancel</button>
+          <button class="btn" onclick="addTask(); this.closest('dialog').close()">Add Task</button>
+        </footer>
+
+        <button type="button" aria-label="Close dialog" onclick="this.closest('dialog').close()">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x-icon lucide-x">
+            <path d="M18 6 6 18" />
+            <path d="m6 6 12 12" />
           </svg>
+        </button>
+      </div>
+    </dialog>
+    <dialog id="dialog-edit-task" class="dialog w-full sm:max-w-[425px] max-h-[612px]" aria-labelledby="dialog-edit-task-title" aria-describedby="dialog-edit-task-description" onclick="if (event.target === this) this.close()">
+      <div class="max-w-200">
+        <header>
+          <h2 id="dialog-edit-task-title">Edit Task<span class="name"></span></h2>
+          <p id="dialog-edit-task-description">Editing task: <span class="font-semibold" id="dialog-edit-task-name-disp"></span>.<br />Click save when you're done.</p>
+        </header>
+
+        <section class="my-4">
+          <form class="form flex flex-col gap-8">
+
+            <div class="hidden"><input type="text" id="dialog-edit-task-id" /></div>
+
+            <div class="flex flex-col gap-2">
+              <label for="dialog-edit-task-name">Name</label>
+              <input type="text" id="dialog-edit-task-name" autofocus />
+            </div>
+
+            <div class="flex flex-col gap-2">
+              <label for="dialog-edit-task-assigned">Allocated to</label>
+              <select class="select-resources" id="dialog-edit-task-assigned"></select>
+            </div>
+
+            <div class="flex flex-col gap-2">
+              <label for="dialog-edit-task-milestone">Milestone (optional: overrides any direct date)</label>
+              <select class="select-milestone" id="dialog-edit-task-milestone"></select>
+            </div>
+
+            <div class="flex flex-col gap-2">
+              <label for="dialog-edit-task-date">Direct Date (optional)</label>
+              <input type="date" id="dialog-edit-task-date">
+            </div>
+
+            <div class="flex flex-col gap-2">
+              <label for="dialog-edit-task-category">Category (optional)</label>
+              <select class="select-category" id="dialog-edit-task-category"></select>
+              <label>
+            </div>
+
+            <div class="flex gap-3">
+              <label for="dialog-edit-task-completed">Task is completed</label>
+              <input type="checkbox" id="dialog-edit-task-completed" role="switch">
+            </div>
+
+            <div class="flex flex-col gap-2">
+              Links
+              <div class="relative">
+                <input type="url" class="input pl-9"  id="dialog-edit-task-confluence">
+                <div class="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-muted-foreground [&>svg]:size-4">
+                  <svg class="text-sky-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 50 50" style="height: 1em;" fill="currentColor">
+                    <path d="M 36.988281 2.9902344 C 36.519863 3.0093652 36.069688 3.2528906 35.804688 3.6816406 C 35.800688 3.6886406 35.795016 3.6941719 35.791016 3.7011719 C 35.411016 4.3361719 34.921672 5.1619219 34.388672 6.0449219 C 30.470672 13.059922 26.844437 11.486422 20.023438 8.2324219 L 10.609375 4.1308594 C 9.881375 3.7848594 9.0091094 4.0933125 8.6621094 4.8203125 C 8.6541094 4.8343125 8.6485781 4.846375 8.6425781 4.859375 L 4.1210938 14.705078 C 3.8020938 15.435078 4.1275625 16.285188 4.8515625 16.617188 C 6.8375625 17.551188 10.789703 19.411953 14.345703 21.126953 C 27.142703 27.335953 38.016938 26.934063 46.335938 13.414062 C 46.810938 12.641063 47.343875 11.742344 47.796875 11.027344 C 48.201875 10.343344 47.985594 9.4609687 47.308594 9.0429688 L 37.814453 3.2050781 C 37.557203 3.0464531 37.269332 2.9787559 36.988281 2.9902344 z M 21.050781 25.003906 C 14.442609 25.143818 8.6034688 28.546719 3.6640625 36.574219 C 3.1890625 37.347219 2.656125 38.245938 2.203125 38.960938 C 1.798125 39.644937 2.0144063 40.527312 2.6914062 40.945312 L 12.185547 46.783203 C 12.871547 47.206203 13.771312 46.994594 14.195312 46.308594 C 14.199312 46.301594 14.204984 46.294109 14.208984 46.287109 C 14.588984 45.652109 15.078328 44.828312 15.611328 43.945312 C 19.529328 36.930312 23.155563 38.501859 29.976562 41.755859 L 39.390625 45.859375 C 40.118625 46.205375 40.990891 45.896922 41.337891 45.169922 L 41.355469 45.130859 L 45.876953 35.285156 C 46.195953 34.555156 45.870484 33.705047 45.146484 33.373047 C 43.160484 32.439047 39.208344 30.578281 35.652344 28.863281 C 30.454375 26.340062 25.572162 24.908177 21.050781 25.003906 z"></path>
+                  </svg>
+                </div>
+              </div>
+              <div class="relative">
+                <input type="url" class="input pl-9"  id="dialog-edit-task-jira">
+                <div class="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-muted-foreground [&>svg]:size-4">
+                  <svg class="text-sky-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" style="height: 1em;" fill="currentColor">
+                    <path d="M11.53,2a4.37,4.37,0,0,0,4.35,4.35h1.78v1.7A4.35,4.35,0,0,0,22,12.4V2.84A.85.85,0,0,0,21.16,2H11.53M6.77,6.8a4.36,4.36,0,0,0,4.34,4.34h1.8v1.72a4.36,4.36,0,0,0,4.34,4.34V7.63a.84.84,0,0,0-.83-.83H6.77M2,11.6a4.34,4.34,0,0,0,4.35,4.34H8.13v1.72A4.36,4.36,0,0,0,12.47,22V12.43a.85.85,0,0,0-.84-.84H2Z"></path>
+                  </svg>
+                </div>
+              </div>
+              <div class="relative">
+                <input type="url" class="input pl-9"  id="dialog-edit-task-other">
+                <div class="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-muted-foreground [&>svg]:size-4">
+                  <svg class="text-sky-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" style="height: 1em;" fill="none">
+                    <path d="M7.24989 12C7.24989 11.59 7.58989 11.25 7.99989 11.25H10.9999V7.5C10.9999 6.95 10.5499 6.5 9.99989 6.5H7.76989C4.61989 6.5 1.87989 9.08 1.99989 12.22C2.05989 13.65 2.65989 14.94 3.60989 15.89C4.60989 16.88 5.97989 17.5 7.49989 17.5H9.99989C10.5499 17.5 10.9999 17.05 10.9999 16.5V12.75H7.99989C7.58989 12.75 7.24989 12.41 7.24989 12Z" fill="currentColor"/>
+                    <path d="M20.39 8.11C19.39 7.12 18.02 6.5 16.5 6.5H14C13.45 6.5 13 6.95 13 7.5V11.25H16C16.41 11.25 16.75 11.59 16.75 12C16.75 12.41 16.41 12.75 16 12.75H13V16.5C13 17.05 13.45 17.5 14 17.5H16.23C19.38 17.5 22.12 14.92 21.99 11.78C21.94 10.35 21.33 9.06 20.39 8.11Z" fill="currentColor"/>
+                    <path d="M13 11.25H11V12.75H13V11.25Z" fill="currentColor"/>
+                  </svg>
+                </div>
+              </div>
+            </div>
+
+          </form>
+
+        </section>
+
+        <footer>
+          <button class="btn-secondary" onclick="this.closest('dialog').close()">Cancel</button>
+          <button class="btn" onclick="saveEditedTask(); this.closest('dialog').close()">Save changes</button>
+        </footer>
+
+        <button type="button" aria-label="Close dialog" onclick="this.closest('dialog').close()">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x-icon lucide-x">
+            <path d="M18 6 6 18" />
+            <path d="m6 6 12 12" />
+          </svg>
+        </button>
+      </div>
+    </dialog>
+    <dialog id="dialog-task-timeline" class="dialog w-full sm:max-w-[425px] max-h-[612px]" aria-labelledby="dialog-task-timeline-title" aria-describedby="dialog-task-timeline-description" onclick="if (event.target === this) this.close()">
+      <div class="max-w-8/10">
+        <header>
+          <h2 id="dialog-task-timeline-title">View Task Timeline for <span class="font-semibold" id="dialog-task-resource-name"></span></h2>
+        </header>
+
+        <section class="my-4">
+          <div class="timeline-holder"></div>
+        </section>
+
+        <footer>
+          <button class="btn-secondary" onclick="this.closest('dialog').close()">Close</button>
+        </footer>
+
+        <button type="button" aria-label="Close dialog" onclick="this.closest('dialog').close()">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x-icon lucide-x">
+            <path d="M18 6 6 18" />
+            <path d="m6 6 12 12" />
+          </svg>
+        </button>
+      </div>
+    </dialog>
+    <dialog id="dialog-configure-task-filters" class="dialog w-full sm:max-w-[425px] max-h-[612px]" aria-labelledby="dialog-configure-task-filters-title" aria-describedby="dialog-configure-task-filters-description" onclick="if (event.target === this) this.close()">
+      <div class="max-w-200">
+        <header>
+          <h2 id="dialog-configure-task-filters-title">Configure active filters below.</h2>
+        </header>
+
+        <section class="my-4">
+          <form class="form flex flex-col gap-8">        
+            <div class="flex flex-col gap-2 w-fit">
+              <label for="filters-categories-input">Set Category filter</label>
+              <div class="select select-multiple-categories" data-placeholder="Select categories ...">
+                <button type="button" class="btn-outline w-[220px]" id="filters-categories-trigger" aria-haspopup="listbox" 
+                        aria-expanded="false" aria-controls="filters-categories-listbox">
+                  <span class="truncate"></span>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-down-icon lucide-chevron-down text-muted-foreground opacity-50 shrink-0"><path d="m6 9 6 6 6-6" /></svg>
+                </button>
+                <div id="filters-categories-popover" data-popover aria-hidden="true">
+                  <div class="scrollbar overflow-y-auto max-h-64" role="listbox" id="filters-categories-listbox" aria-orientation="vertical" 
+                      aria-labelledby="filters-categories-trigger" aria-multiselectable="true">
+                  </div>
+                </div>
+                <input id="filters-categories-input" type="hidden" name="chart-types" value='[]' />
+              </div>
+            </div>       
+
+            <div class="flex flex-col gap-2 w-fit">
+              <label for="filters-milestones-input">Set Milestone filter</label>
+              <div class="select select-multiple-milestones" data-placeholder="Select milestones ...">
+                <button type="button" class="btn-outline w-[220px]" id="filters-milestones-trigger" aria-haspopup="listbox" 
+                        aria-expanded="false" aria-controls="filters-milestones-listbox">
+                  <span class="truncate"></span>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-down-icon lucide-chevron-down text-muted-foreground opacity-50 shrink-0"><path d="m6 9 6 6 6-6" /></svg>
+                </button>
+                <div id="filters-milestones-popover" data-popover aria-hidden="true">
+                  <div class="scrollbar overflow-y-auto max-h-64" role="listbox" id="filters-milestones-listbox" aria-orientation="vertical" 
+                      aria-labelledby="filters-milestones-trigger" aria-multiselectable="true">
+                  </div>
+                </div>
+                <input id="filters-milestones-input" type="hidden" name="chart-types" value='[]' />
+              </div>
+            </div>  
+            
+            <div class="flex flex-col gap-2">
+              <label for="filters-string">Text filter (task name or linked-milestone name)</label>
+              <input type="text" id="filters-string" />
+            </div>
+            
+          </form>  
+        </section>
+
+        <footer>
+          <button class="btn-secondary" onclick="this.closest('dialog').close()">Cancel</button>
+          <button class="btn" onclick="applyFilters(); this.closest('dialog').close()">Apply filters</button>
+        </footer>
+
+        <button type="button" aria-label="Close dialog" onclick="this.closest('dialog').close()">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x-icon lucide-x">
+            <path d="M18 6 6 18" />
+            <path d="m6 6 12 12" />
+          </svg>
+        </button>
+      </div>
+    </dialog>    
+    <dialog id="alert-complete-task" class="dialog" aria-labelledby="alert-complete-task-title" aria-describedby="alert-complete-task-description" onclick="if (event.target === this) this.close()">
+      <div class="max-w-200">
+        <header>
+          <h2 id="alert-complete-task-title">Are you sure?</h2>
+          <p id="alert-complete-task-description" class="my-3">This will mark <strong id="alert-complete-task-name">WHICH</strong> as <strong>complete</strong>!</p>
+        </header>
+        <footer>
+          <button class="btn-secondary" onclick="this.closest('dialog').close()">Cancel, it's still going!</button>
+          <button class="confirm btn-secondary">Yes, it's complete</button>
+        </footer>
+      </div>
+    </dialog>
+    <dialog id="alert-delete-task" class="dialog" aria-labelledby="alert-delete-task-title" aria-describedby="alert-delete-task-description" onclick="if (event.target === this) this.close()">
+      <div class="max-w-200">
+        <header>
+          <h2 id="alert-delete-task-title">Are you sure?</h2>
+          <p id="alert-delete-task-description" class="my-3">This action <strong>cannot be undone</strong>.<br />This will permanently delete <strong id="alert-delete-task-name">WHICH</strong>.</p>
+        </header>
+
+        <footer>
+          <button class="btn-secondary" onclick="this.closest('dialog').close()">Cancel, I still want it</button>
+          <button class="confirm btn-destructive">Yes, delete it</button>
+        </footer>
+      </div>
+    </dialog>
+    <dialog id="alert-delete-completed-tasks" class="dialog" aria-labelledby="alert-delete-completed-tasks-title" aria-describedby="alert-delete-completed-tasks-description" onclick="if (event.target === this) this.close()">
+      <div class="max-w-200">
+        <header>
+          <h2 id="alert-delete-completed-tasks-title">Are you sure?</h2>
+          <p id="alert-delete-completed-tasks-description" class="my-3">This action <strong>cannot be undone</strong>.<br />
+            This will permanently delete tasks before <strong id="alert-delete-completed-tasks-date">WHICH</strong>.</p>
+        </header>
+
+        <footer>
+          <button class="btn-secondary" onclick="this.closest('dialog').close()">Cancel, I still want them</button>
+          <button class="confirm btn-destructive">Yes, delete them</button>
+        </footer>
+      </div>
+    </dialog>
+    <dialog id="dialog-configure-resources" class="dialog w-full sm:max-w-[425px] max-h-[612px]" aria-labelledby="dialog-configure-resources-title" aria-describedby="dialog-configure-resources-description" onclick="if (event.target === this) this.close()">
+      <div class="max-w-8/10">
+        <header>
+          <h2 id="dialog-configure-resources-title">Configure available resources here.</h2>
+          <div id="dialog-configure-resources-description" class="my-3">
+          <p class="text-red-600">Deleting a resources will unallocate any tasks allocated to those resources.</p>
+          </div>
+        </header>
+
+        <section class="my-4">
+          <div class="form flex flex-col gap-6">  
+
+            <div class="flex gap-6 justify-between editable-resource-entry hidden">
+              <div class="flex gap-4 w-1/1">
+                <input class="w-1/3 resource-name" type="text" placeholder="Enter the resource's name..."/>
+                <input class="w-1/3 resource-type" type="text" placeholder="Enter the resource type (eg. Engineer, Teamm etc)..." />
+                <button class="confirm btn-outline text-red-600 stage-resource-deletion">Toggle Delete Resource</button>
+              </div>              
+            </div>            
+          </div>  
+
+          <button class="w-fit btn-secondary add-resource-div mt-6">Add Resource</button>
+
+        </section>
+
+        <footer>
+          <button class="btn-secondary" onclick="this.closest('dialog').close()">Cancel</button>
+          <button class="btn" onclick="updateResourcesFromModal(); this.closest('dialog').close()">Apply changes</button> 
+        </footer>
+
+        <button type="button" aria-label="Close dialog" onclick="this.closest('dialog').close()">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x-icon lucide-x">
+            <path d="M18 6 6 18" />
+            <path d="m6 6 12 12" />
+          </svg>
+        </button>
+      </div>
+    </dialog> 
+    <dialog id="dialog-configure-categories" class="dialog w-full sm:max-w-[425px] max-h-[612px]" aria-labelledby="dialog-configure-categories-title" aria-describedby="dialog-configure-categories-description" onclick="if (event.target === this) this.close()">
+      <div class="max-w-200">
+        <header>
+          <h2 id="dialog-configure-categories-title">Configure available categories here.</h2>
+          <div id="dialog-configure-categories-description" class="my-3">
+          <p class="text-red-600">Deleting a category in use will set any tasks using that category to 'no category'.</p>
+          </div>
+        </header>
+
+        <section class="my-4">
+          <div class="form flex flex-col gap-6">  
+            <div class="flex gap-6 justify-between editable-category-entry hidden"> 
+              <div class="flex gap-4 w-1/1">
+                <input class="w-1/6 category-code" type="text" placeholder="Category code..." />
+                <input class="w-2/6 category-name" type="text" placeholder="Category name..." />
+                <select class="w-2/6 category-color preserve" name="category-color">
+                  <option value="">- NO COLOR -</option>
+                  <option value="#22c55e" style="color:#22c55e">Green (#22c55e)</option>
+                  <option value="#14b8a6" style="color:#14b8a6">Teal (#14b8a6)</option>
+                  <option value="#06b6d4" style="color:#06b6d4">Cyan (#06b6d4)</option>
+                  <option value="#0ea5e9" style="color:#0ea5e9">Sky (#0ea5e9)</option>
+                  <option value="#3b82f6" style="color:#3b82f6">Blue (#3b82f6)</option>
+                  <option value="#6366f1" style="color:#6366f1">Indigo (#6366f1)</option>
+                  <option value="#8b5cf6" style="color:#8b5cf6">Violet (#8b5cf6)</option>
+                  <option value="#a855f7" style="color:#a855f7">Purple (#a855f7)</option>
+                  <option value="#d946ef" style="color:#d946ef">Fuchsia (#d946ef)</option>
+                  <option value="#f43f5e" style="color:#f43f5e">Rose (#f43f5e)</option>
+                  <option value="#ef4444" style="color:#ef4444">Red (#ef4444)</option>
+                  <option value="#f97316" style="color:#f97316">Orange (#f97316)</option>
+                  <option value="#f59e0b" style="color:#f59e0b">Amber (#f59e0b)</option>
+                  <option value="#84cc16" style="color:#84cc16">Lime (#84cc16)</option>
+                  <option value="#64748b" style="color:#64748b">Slate (#64748b)</option>
+                  <option value="#71717a" style="color:#71717a">Zinc (#71717a)</option>
+                </select>
+                <button class="confirm btn-outline text-red-600 stage-category-deletion">Toggle Delete Category</button>                
+              </div>              
+            </div>            
+          </div>  
+
+          <button class="w-fit btn-secondary add-category-div mt-6">Add Category</button>
+
+        </section>
+
+        <footer>
+          <button class="btn-secondary" onclick="this.closest('dialog').close()">Cancel</button>
+          <button class="btn" onclick="updateCategoriesFromModal(); this.closest('dialog').close()">Apply changes</button> 
+        </footer>
+
+        <button type="button" aria-label="Close dialog" onclick="this.closest('dialog').close()">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x-icon lucide-x">
+            <path d="M18 6 6 18" />
+            <path d="m6 6 12 12" />
+          </svg>
+        </button>
+      </div>
+    </dialog> 
+    <dialog id="dialog-configure-general" class="dialog w-full sm:max-w-[425px] max-h-[612px]" aria-labelledby="dialog-configure-general-title" aria-describedby="dialog-configure-general-description" onclick="if (event.target === this) this.close()">
+      <div class="max-w-200">
+        <header>
+          <h2 id="dialog-configure-general-title">Configure general project options here.</h2>
+        </header>
+
+         <section class="my-4">
+          <form class="form flex flex-col gap-8">
+
+            <div class="flex flex-col gap-2">
+              <label for="dialog-configure-general-project-title" >Project Title</label>
+              <input type="text" id="dialog-configure-general-project-title" autofocus />
+            </div>
+
+            <div class="grid flex-col gap-2">
+              <label for="dialog-configure-general-project-logo" class="label">Project Logo</label>
+              <textarea id="dialog-configure-general-project-logo" class="textarea" placeholder=""></textarea>
+              <p class="text-muted-foreground text-sm">Ideally use svg code here.</p>
+            </div>
+
+            <div class="grid flex-col gap-2">
+              <label for="dialog-configure-general-project-color" class="label">Primary Color</label>
+              <input type="color" id="dialog-configure-general-project-color" value="#333333" />
+            </div>
+
+            <div class="flex flex-col gap-2">Force Milestone Dates [not implemented yet]
+              <div class="flex gap-4">              
+                <div class="flex gap-2">              
+                  <label for="dialog-configure-general-milestone-start-date">Start</label>
+                  <input type="date" id="dialog-configure-general-milestone-start-date">
+                </div>
+                <div class="flex gap-2">
+                  <label for="dialog-configure-general-milestone-end-date">End</label>
+                  <input type="date" id="dialog-configure-general-milestone-end-date">
+                </div>            
+              </div>
+            </div>
+            
+            <div class="flex flex-col gap-2">
+              <label for="dialog-configure-general-soon" >"Soon" threshold (days to go)</label>
+              <input type="text" id="dialog-configure-general-soon" />
+            </div>
+
+          </form>
+
+        </section>
+
+        <footer>
+          <button class="btn-secondary" onclick="this.closest('dialog').close()">Cancel</button>
+          <button class="btn" onclick="saveConfigFromModal(); this.closest('dialog').close()">Apply changes</button> 
+        </footer>
+
+        <button type="button" aria-label="Close dialog" onclick="this.closest('dialog').close()">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x-icon lucide-x">
+            <path d="M18 6 6 18" />
+            <path d="m6 6 12 12" />
+          </svg>
+        </button>
+      </div>
+    </dialog> 
+   
+    <div id="toaster" class="toaster" data-align="center"></div>
+
+    <template id="template-milestone">
+      <div class="milestone rounded-md py-2 px-3 cursor-default" style="background-color: var(--secondary);" data-msid="">
+        <div class="flex gap-3">
+          <div class="shrink milestoneName" data-edit-event="dblclick.textEditor">Template for Milestones</div>
+          <div class="grow">
+            <div class="flex gap-6 justify-end items-center">
+              <div class="flex gap-2 items-center">
+                <div class="self-baseline date">YYYY-MM-DD</div>
+                <div data-tooltip="Toggle milestone tentative" class="toggle-milestone-tentative" data-align="end">
+                  <svg class="tentative opacity-10 hover:opacity-100 cursor-pointer" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 56 56" style="height: 1em;" fill="currentColor">
+                    <path d="M 27.9999 51.9063 C 41.0546 51.9063 51.9063 41.0781 51.9063 28 C 51.9063 14.9453 41.0312 4.0937 27.9765 4.0937 C 14.8983 4.0937 4.0937 14.9453 4.0937 28 C 4.0937 41.0781 14.9218 51.9063 27.9999 51.9063 Z M 28.0468 40.1875 C 26.8046 40.1875 26.0312 39.4141 26.0546 38.1953 L 26.2890 31.0937 L 19.8671 35.2188 C 19.5155 35.4766 19.1405 35.5937 18.6483 35.5937 C 17.6874 35.5937 16.7733 34.8437 16.7733 33.6250 C 16.7733 32.8750 17.1483 32.3359 17.8983 31.9141 L 24.5780 28.1641 L 17.8749 24.4844 C 17.1483 24.0390 16.7733 23.5234 16.7733 22.7266 C 16.7733 21.5078 17.6874 20.7812 18.6483 20.7812 C 19.1405 20.7812 19.5155 20.8984 19.8671 21.1094 L 26.2890 25.1875 L 26.0546 17.8984 C 26.0312 16.6563 26.8046 15.8594 28.0468 15.8594 C 29.2655 15.8594 29.9687 16.6094 29.9452 17.8984 L 29.7109 25.1875 L 36.1327 21.0859 C 36.4843 20.8750 36.8593 20.7578 37.3514 20.7578 C 38.3124 20.7578 39.2265 21.5078 39.2265 22.7031 C 39.2265 23.4766 38.8514 24.0156 38.1014 24.4609 L 31.3749 28.1641 L 38.1014 31.9141 C 38.8514 32.3594 39.2265 32.8750 39.2265 33.6484 C 39.2265 34.8437 38.3124 35.6172 37.3514 35.6172 C 36.8593 35.6172 36.4843 35.5 36.1327 35.2656 L 29.7109 31.0937 L 29.9452 38.1953 C 29.9687 39.4609 29.2655 40.1875 28.0468 40.1875 Z"/>
+                  </svg>
+                </div>
+              </div>
+              <div class="flex gap-2 items-center">
+                <div data-tooltip="Link" data-align="end">
+                  <svg class="link" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" style="height: 1em;" fill="none">
+                    <path d="M7.24989 12C7.24989 11.59 7.58989 11.25 7.99989 11.25H10.9999V7.5C10.9999 6.95 10.5499 6.5 9.99989 6.5H7.76989C4.61989 6.5 1.87989 9.08 1.99989 12.22C2.05989 13.65 2.65989 14.94 3.60989 15.89C4.60989 16.88 5.97989 17.5 7.49989 17.5H9.99989C10.5499 17.5 10.9999 17.05 10.9999 16.5V12.75H7.99989C7.58989 12.75 7.24989 12.41 7.24989 12Z" fill="currentColor"/>
+                    <path d="M20.39 8.11C19.39 7.12 18.02 6.5 16.5 6.5H14C13.45 6.5 13 6.95 13 7.5V11.25H16C16.41 11.25 16.75 11.59 16.75 12C16.75 12.41 16.41 12.75 16 12.75H13V16.5C13 17.05 13.45 17.5 14 17.5H16.23C19.38 17.5 22.12 14.92 21.99 11.78C21.94 10.35 21.33 9.06 20.39 8.11Z" fill="currentColor"/>
+                    <path d="M13 11.25H11V12.75H13V11.25Z" fill="currentColor"/>
+                  </svg>
+                </div>
+              </div>
+              <div class="flex gap-2 items-center">
+                <div data-tooltip="Edit milestone" class="edit-milestone" data-align="end">
+                  <svg class="text-neutral-500/80 hover:text-neutral-500 cursor-pointer" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 30 30" class="open-milestone-edit-modal" style="height: 1em;" fill="currentColor">
+                    <path d="M 22.828125 3 C 22.316375 3 21.804562 3.1954375 21.414062 3.5859375 L 19 6 L 24 11 L 26.414062 8.5859375 C 27.195062 7.8049375 27.195062 6.5388125 26.414062 5.7578125 L 24.242188 3.5859375 C 23.851688 3.1954375 23.339875 3 22.828125 3 z M 17 8 L 5.2597656 19.740234 C 5.2597656 19.740234 6.1775313 19.658 6.5195312 20 C 6.8615312 20.342 6.58 22.58 7 23 C 7.42 23.42 9.6438906 23.124359 9.9628906 23.443359 C 10.281891 23.762359 10.259766 24.740234 10.259766 24.740234 L 22 13 L 17 8 z M 4 23 L 3.0566406 25.671875 A 1 1 0 0 0 3 26 A 1 1 0 0 0 4 27 A 1 1 0 0 0 4.328125 26.943359 A 1 1 0 0 0 4.3378906 26.939453 L 4.3632812 26.931641 A 1 1 0 0 0 4.3691406 26.927734 L 7 26 L 5.5 24.5 L 4 23 z"></path>
+                  </svg>
+                </div>
+                <div data-tooltip="Delete milestone" class="delete-milestone" data-align="end">
+                  <svg class="text-red-600/60 hover:text-red-600/80 cursor-pointer" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 408.483 408.483" class="delete" style="height: 1em;" fill="currentColor">
+                    <g>
+                      <g>
+                        <path d="M87.748,388.784c0.461,11.01,9.521,19.699,20.539,19.699h191.911c11.018,0,20.078-8.689,20.539-19.699l13.705-289.316
+                          H74.043L87.748,388.784z M247.655,171.329c0-4.61,3.738-8.349,8.35-8.349h13.355c4.609,0,8.35,3.738,8.35,8.349v165.293
+                          c0,4.611-3.738,8.349-8.35,8.349h-13.355c-4.61,0-8.35-3.736-8.35-8.349V171.329z M189.216,171.329
+                          c0-4.61,3.738-8.349,8.349-8.349h13.355c4.609,0,8.349,3.738,8.349,8.349v165.293c0,4.611-3.737,8.349-8.349,8.349h-13.355
+                          c-4.61,0-8.349-3.736-8.349-8.349V171.329L189.216,171.329z M130.775,171.329c0-4.61,3.738-8.349,8.349-8.349h13.356
+                          c4.61,0,8.349,3.738,8.349,8.349v165.293c0,4.611-3.738,8.349-8.349,8.349h-13.356c-4.61,0-8.349-3.736-8.349-8.349V171.329z"/>
+                        <path d="M343.567,21.043h-88.535V4.305c0-2.377-1.927-4.305-4.305-4.305h-92.971c-2.377,0-4.304,1.928-4.304,4.305v16.737H64.916
+                          c-7.125,0-12.9,5.776-12.9,12.901V74.47h304.451V33.944C356.467,26.819,350.692,21.043,343.567,21.043z"/>
+                      </g>
+                    </g>
+                  </svg>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
-      <div>
-        <h3 id="read-only-banner" style="color: red; margin: 0.25rem 0; display: none;"><em>READ ONLY</em></h3>
-        <button id="saveButton" class="outline" style="margin: 0.25rem 0;">Save Changes</button> 
-        <button id="exportButton" class="outline" style="margin: 0.25rem 0;">Export</button>    
-        <!-- <button id="saveReadOnly" class="outline" style="margin: 0.5rem 0;">Read Only Version</button>     -->
-        <small><em>Last saved <span id="saveDate"></span>.</em></small>
-      </div>  
-          
-      <div style="margin: 3rem 0;">
-        <ul>
-          <li><a href="#milestones">Milestones</a></li>
-          <li><a href="#allocate">Allocate</a>
-          <ul id="menuAllocationOptions"></ul></li>
-          <li><a href="#completedTasks">Completed</a></li>
-        </ul>
-      </div>         
-        
-      <button id="openFilters" class="outline" style="margin: 0.25rem 0;">Filters</button>
-      <button id="manageAllocations" class="outline" style="margin: 0.25rem 0;">Allocation Options</button>
-      <button id="manageCategories" class="outline" style="margin: 0.25rem 0;">Category Options</button>
 
-      <div style="padding: 1rem 0; margin-top: 1rem; border-top: var(--pico-border-width) solid var(--pico-card-border-color);">
-        <small><a href="javascript:void(0)" id="openAboutModal">A quine HTML dashboard</a>.<br>v1.4.3 - <span id="byLine"></span></small>
+    </template>
+    <template id="template-resource">
+      <div class="resource flex flex-col gap-3">
+        <div class="about flex gap-3 items-baseline">
+          <h2 class="shrink"></h2>
+          <small class="opacity-70">(<span class="count"></span> tasks)</small>
+          <div class="grow flex gap-3 justify-end items-baseline">
+            <small class="type opacity-70"></small>
+          </div>
+        </div>
+        <div class="task-list tasks-active flex flex-col gap-1"></div>
+        <div class="task backlog-divider opacity-70" data-itemid="-1"><div class="backlog-divider">Active/Backlog Divider</div></div>
+        <div class="task-list tasks-backlog flex flex-col gap-1"></div>
+        <div class="flex justify-between">
+          <button type="button" class="add-task btn-secondary">Add a Task</button>
+          <button type="button" class="timeline btn-secondary">Show Task Timeline</button>
+        </div>
       </div>
+    </template>
+    <template id="template-task">
+      <div class="task rounded-md py-2 px-3 cursor-default" style="background-color: var(--secondary);" data-itemid="">
+        <div class="flex gap-3">
+          <div class="shrink category font-semibold" style="min-width: 2.2em;">EG1</div>
+          <div class="shrink taskName" data-edit-event="dblclick.textEditor">Template for Tasks</div>
+          <div class="shrink allocation hidden">(<small class="assignee">Resource</small>)</div>
+          <div class="grow">
+            <div class="flex gap-6 justify-end items-center">
+              <div class="task-milestone flex gap-2">
+                <div class="self-baseline name text-sm">Milestone Name</div>
+                <div class="self-baseline date">YYYY-MM-DD</div>
+                <div class="tentative self-center opacity-0" data-tooltip="Tentative milestone" data-align="end">
+                  <svg class="opacity-50" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 56 56" style="height: 1em;" fill="currentColor">
+                    <path d="M 27.9999 51.9063 C 41.0546 51.9063 51.9063 41.0781 51.9063 28 C 51.9063 14.9453 41.0312 4.0937 27.9765 4.0937 C 14.8983 4.0937 4.0937 14.9453 4.0937 28 C 4.0937 41.0781 14.9218 51.9063 27.9999 51.9063 Z M 28.0468 40.1875 C 26.8046 40.1875 26.0312 39.4141 26.0546 38.1953 L 26.2890 31.0937 L 19.8671 35.2188 C 19.5155 35.4766 19.1405 35.5937 18.6483 35.5937 C 17.6874 35.5937 16.7733 34.8437 16.7733 33.6250 C 16.7733 32.8750 17.1483 32.3359 17.8983 31.9141 L 24.5780 28.1641 L 17.8749 24.4844 C 17.1483 24.0390 16.7733 23.5234 16.7733 22.7266 C 16.7733 21.5078 17.6874 20.7812 18.6483 20.7812 C 19.1405 20.7812 19.5155 20.8984 19.8671 21.1094 L 26.2890 25.1875 L 26.0546 17.8984 C 26.0312 16.6563 26.8046 15.8594 28.0468 15.8594 C 29.2655 15.8594 29.9687 16.6094 29.9452 17.8984 L 29.7109 25.1875 L 36.1327 21.0859 C 36.4843 20.8750 36.8593 20.7578 37.3514 20.7578 C 38.3124 20.7578 39.2265 21.5078 39.2265 22.7031 C 39.2265 23.4766 38.8514 24.0156 38.1014 24.4609 L 31.3749 28.1641 L 38.1014 31.9141 C 38.8514 32.3594 39.2265 32.8750 39.2265 33.6484 C 39.2265 34.8437 38.3124 35.6172 37.3514 35.6172 C 36.8593 35.6172 36.4843 35.5 36.1327 35.2656 L 29.7109 31.0937 L 29.9452 38.1953 C 29.9687 39.4609 29.2655 40.1875 28.0468 40.1875 Z"/>
+                  </svg>
+                </div>
+                <div class="hidden completed-date" data-tooltip="Completion Date" data-align="end">(<span></span>)</div>
+              </div>
+              <div class="flex gap-2 items-center">
+                <div data-tooltip="Confluence link" data-align="end">
+                  <svg class="confluence" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 50 50" style="height: 1em;" fill="currentColor">
+                    <path d="M 36.988281 2.9902344 C 36.519863 3.0093652 36.069688 3.2528906 35.804688 3.6816406 C 35.800688 3.6886406 35.795016 3.6941719 35.791016 3.7011719 C 35.411016 4.3361719 34.921672 5.1619219 34.388672 6.0449219 C 30.470672 13.059922 26.844437 11.486422 20.023438 8.2324219 L 10.609375 4.1308594 C 9.881375 3.7848594 9.0091094 4.0933125 8.6621094 4.8203125 C 8.6541094 4.8343125 8.6485781 4.846375 8.6425781 4.859375 L 4.1210938 14.705078 C 3.8020938 15.435078 4.1275625 16.285188 4.8515625 16.617188 C 6.8375625 17.551188 10.789703 19.411953 14.345703 21.126953 C 27.142703 27.335953 38.016938 26.934063 46.335938 13.414062 C 46.810938 12.641063 47.343875 11.742344 47.796875 11.027344 C 48.201875 10.343344 47.985594 9.4609687 47.308594 9.0429688 L 37.814453 3.2050781 C 37.557203 3.0464531 37.269332 2.9787559 36.988281 2.9902344 z M 21.050781 25.003906 C 14.442609 25.143818 8.6034688 28.546719 3.6640625 36.574219 C 3.1890625 37.347219 2.656125 38.245938 2.203125 38.960938 C 1.798125 39.644937 2.0144063 40.527312 2.6914062 40.945312 L 12.185547 46.783203 C 12.871547 47.206203 13.771312 46.994594 14.195312 46.308594 C 14.199312 46.301594 14.204984 46.294109 14.208984 46.287109 C 14.588984 45.652109 15.078328 44.828312 15.611328 43.945312 C 19.529328 36.930312 23.155563 38.501859 29.976562 41.755859 L 39.390625 45.859375 C 40.118625 46.205375 40.990891 45.896922 41.337891 45.169922 L 41.355469 45.130859 L 45.876953 35.285156 C 46.195953 34.555156 45.870484 33.705047 45.146484 33.373047 C 43.160484 32.439047 39.208344 30.578281 35.652344 28.863281 C 30.454375 26.340062 25.572162 24.908177 21.050781 25.003906 z"></path>
+                  </svg>
+                </div>
+                <div data-tooltip="Jira link" data-align="end">
+                  <svg class="jira" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" style="height: 1em;" fill="currentColor">
+                    <path d="M11.53,2a4.37,4.37,0,0,0,4.35,4.35h1.78v1.7A4.35,4.35,0,0,0,22,12.4V2.84A.85.85,0,0,0,21.16,2H11.53M6.77,6.8a4.36,4.36,0,0,0,4.34,4.34h1.8v1.72a4.36,4.36,0,0,0,4.34,4.34V7.63a.84.84,0,0,0-.83-.83H6.77M2,11.6a4.34,4.34,0,0,0,4.35,4.34H8.13v1.72A4.36,4.36,0,0,0,12.47,22V12.43a.85.85,0,0,0-.84-.84H2Z"></path>
+                  </svg>
+                </div>
+                <div data-tooltip="Other link" data-align="end">
+                  <svg class="link" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" style="height: 1em;" fill="none">
+                    <path d="M7.24989 12C7.24989 11.59 7.58989 11.25 7.99989 11.25H10.9999V7.5C10.9999 6.95 10.5499 6.5 9.99989 6.5H7.76989C4.61989 6.5 1.87989 9.08 1.99989 12.22C2.05989 13.65 2.65989 14.94 3.60989 15.89C4.60989 16.88 5.97989 17.5 7.49989 17.5H9.99989C10.5499 17.5 10.9999 17.05 10.9999 16.5V12.75H7.99989C7.58989 12.75 7.24989 12.41 7.24989 12Z" fill="currentColor"/>
+                    <path d="M20.39 8.11C19.39 7.12 18.02 6.5 16.5 6.5H14C13.45 6.5 13 6.95 13 7.5V11.25H16C16.41 11.25 16.75 11.59 16.75 12C16.75 12.41 16.41 12.75 16 12.75H13V16.5C13 17.05 13.45 17.5 14 17.5H16.23C19.38 17.5 22.12 14.92 21.99 11.78C21.94 10.35 21.33 9.06 20.39 8.11Z" fill="currentColor"/>
+                    <path d="M13 11.25H11V12.75H13V11.25Z" fill="currentColor"/>
+                  </svg>
+                </div>
+              </div>
+              <div class="flex gap-2 items-center">
+                <div data-tooltip="Edit task" class="edit-task" data-align="end">
+                  <svg class="text-neutral-500/80 hover:text-neutral-500 cursor-pointer" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 30 30" class="open-task-edit-modal" style="height: 1em;" fill="currentColor">
+                    <path d="M 22.828125 3 C 22.316375 3 21.804562 3.1954375 21.414062 3.5859375 L 19 6 L 24 11 L 26.414062 8.5859375 C 27.195062 7.8049375 27.195062 6.5388125 26.414062 5.7578125 L 24.242188 3.5859375 C 23.851688 3.1954375 23.339875 3 22.828125 3 z M 17 8 L 5.2597656 19.740234 C 5.2597656 19.740234 6.1775313 19.658 6.5195312 20 C 6.8615312 20.342 6.58 22.58 7 23 C 7.42 23.42 9.6438906 23.124359 9.9628906 23.443359 C 10.281891 23.762359 10.259766 24.740234 10.259766 24.740234 L 22 13 L 17 8 z M 4 23 L 3.0566406 25.671875 A 1 1 0 0 0 3 26 A 1 1 0 0 0 4 27 A 1 1 0 0 0 4.328125 26.943359 A 1 1 0 0 0 4.3378906 26.939453 L 4.3632812 26.931641 A 1 1 0 0 0 4.3691406 26.927734 L 7 26 L 5.5 24.5 L 4 23 z"></path>
+                  </svg>
+                </div>
+                <div data-tooltip="Mark task complete" class="complete-task" data-align="end">
+                  <svg class="text-green-600/20 hover:text-green-600/100 cursor-pointer" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="complete" style="height: 1em;">
+                    <path fill-rule="evenodd" clip-rule="evenodd" d="M12 21C16.9706 21 21 16.9706 21 12C21 10.1666 20.4518 8.46124 19.5103 7.03891L12.355 14.9893C11.6624 15.7589 10.4968 15.8726 9.66844 15.2513L6.4 12.8C5.95817 12.4686 5.86863 11.8418 6.2 11.4C6.53137 10.9582 7.15817 10.8686 7.6 11.2L10.8684 13.6513L18.214 5.48955C16.5986 3.94717 14.4099 3 12 3C7.02944 3 3 7.02944 3 12C3 16.9706 7.02944 21 12 21Z" fill="currentColor"/>
+                  </svg>
+                </div>
+                <div data-tooltip="Delete task" class="delete-task" data-align="end">
+                  <svg class="text-red-600/40 hover:text-red-600/80 cursor-pointer" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 408.483 408.483" class="delete" style="height: 1em;" fill="currentColor">
+                    <g>
+                      <g>
+                        <path d="M87.748,388.784c0.461,11.01,9.521,19.699,20.539,19.699h191.911c11.018,0,20.078-8.689,20.539-19.699l13.705-289.316
+                          H74.043L87.748,388.784z M247.655,171.329c0-4.61,3.738-8.349,8.35-8.349h13.355c4.609,0,8.35,3.738,8.35,8.349v165.293
+                          c0,4.611-3.738,8.349-8.35,8.349h-13.355c-4.61,0-8.35-3.736-8.35-8.349V171.329z M189.216,171.329
+                          c0-4.61,3.738-8.349,8.349-8.349h13.355c4.609,0,8.349,3.738,8.349,8.349v165.293c0,4.611-3.737,8.349-8.349,8.349h-13.355
+                          c-4.61,0-8.349-3.736-8.349-8.349V171.329L189.216,171.329z M130.775,171.329c0-4.61,3.738-8.349,8.349-8.349h13.356
+                          c4.61,0,8.349,3.738,8.349,8.349v165.293c0,4.611-3.738,8.349-8.349,8.349h-13.356c-4.61,0-8.349-3.736-8.349-8.349V171.329z"/>
+                        <path d="M343.567,21.043h-88.535V4.305c0-2.377-1.927-4.305-4.305-4.305h-92.971c-2.377,0-4.304,1.928-4.304,4.305v16.737H64.916
+                          c-7.125,0-12.9,5.776-12.9,12.901V74.47h304.451V33.944C356.467,26.819,350.692,21.043,343.567,21.043z"/>
+                      </g>
+                    </g>
+                  </svg>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </template>
+    <template id="template-task-dropzone">
+      <div class="task task-dropzone opacity-30 rounded-md py-1 px-3 text-center" style="background-color: var(--secondary);">Drop tasks here!</div>
+    </template>
+
+    <div class="fixed right-0 w-fit z-999 hidden" style="top: var(--topbar-h);">
+      <div id="active-filter-string" 
+           class="text-sm tracking-tight rounded-md mt-3 me-3 py-2 px-3 border border-blue-500" 
+           style="background-color: var(--color-background);"></div>
     </div>
 
-    <div id="resizer" class="no-print"></div>
-          
-    <main> 
+  </body>
 
-      <article style="margin-bottom: 2rem;" id="milestones">
-      <details style="margin: 0rem;">
-        <summary><h2 style="margin: 0; display: inline-block;">Milestone List</h2><small style="margin: 0 1rem;" id="ms-count" class="count"></small></summary>
-        <p class="guidance no-print">
-          Set and manage project milestones. 
-          Tasks linked to a milestone will automatically show its date and name. <br>
-          Edit names or dates inline, delete unused milestones, or add a new milestone below.          
-        </p>
-        
-        <div id="milestoneList"></div>   
-        <div role="group" style="margin-top: 0.25rem;" class="no-print"><input type="text" class="ms-name"><input type="date" class="ms-date"><button id="addMilestone">Add</button></div>      
-      </details>
-      </article>
-
-      <article style="margin-bottom: 2rem;" id="milestoneTimelineExpander">
-        <details style="margin: 0rem;" open="">
-          <summary><h2 style="margin: 0; display: inline-block;">Graphical Timeline</h2></summary>
-          <div id="milestoneTimeline" style="padding: 1rem 0rem; position: relative;"></div>
-        </details>
-      </article>
-
-      <article id="allocate" style="margin-bottom: 2rem;">  
-      <details style="margin: 0rem;" open="">
-        <summary><h2 style="margin: 0; display: inline-block;">Task Allocations</h2><small style="margin: 0 1rem;" id="tasks-count" class="count"></small></summary>
-        <p class="guidance no-print">
-          Assign tasks by dragging tasks between lists to reassign them.
-        </p>
-        <p class="no-print active-filter">
-          Task Filtering: <span class="active-filter-summary"></span>
-        </p>
-        <div id="allocationOptionSections"></div>
-        <div id="unallocated" style="margin-top: 1.5rem;">
-          <h3 style="color: var(--pico-form-element-invalid-active-border-color); display: inline-block;"><em>Unallocated</em></h3><small style="margin: 0 1rem;" id="tasks-allocations-unallocated-count" class="count"></small>
-          <div class="task-list"></div>  
-          <div role="group" style="margin-top: 0.25rem;" class="no-print" id="">
-            <input type="text" class="tsk-name">
-            <select class="tsk-milestone"></select>
-            <input type="date" class="tsk-date">
-            <select class="tsk-category"></select>
-            <button id="addTask" class="addTask" data-allocation="">Add</button>
-          </div>        
-        </div>       
-      </details>
-      </article>
-
-      <article id="completedTasks" style="margin-bottom: 2rem;">  
-      <details style="margin: 0rem;">
-        <summary><h2 style="margin: 0; display: inline-block;">Completed Tasks</h2><small style="margin: 0 1rem;" id="tasks-complete-count" class="count"></small></summary>
-        <p class="guidance no-print">          
-          Tasks marked as completed appear here. <br>
-          You can restore them if needed using the edit options.
-        </p>
-        <div class="completed-list"></div>    
-      </details>
-      </article>
-    
-    </main>    
-
-    <!-- Modals -->
-    <dialog id="confirmModal">
-      <article>
-        <header>
-          <h3 id="confirmModalTitle"></h3>
-        </header>
-        <form>
-          <p id="confirmModalText">Are you sure you want to delete this task?</p>
-          <footer>
-            <button type="button" id="confirmYes">Yes</button>
-            <button type="button" id="confirmNo" class="secondary">Cancel</button>
-          </footer>
-        </form>
-      </article>
-    </dialog>
-
-    <dialog id="filtersModal">
-      <article>
-        <header>
-          <h3>Filters</h3>
-        </header>
-        <div id="filtersModalBody" style="max-height: 60vh; overflow-y: auto; padding: 1rem;"></div>
-        <footer style="display:flex; gap:.5rem; justify-content: space-between;">
-          <div>
-            <button type="button" id="filtersClearBtn" class="secondary">Clear filters</button>
-          </div>
-          <div>
-            <button type="button" id="filtersCloseBtn">Close</button>
-          </div>
-        </footer>
-      </article>
-    </dialog>
-
-    <dialog id="alertModal">
-      <article>
-        <header>
-          <h3 id="alertModalTitle">Notice for Export</h3>        
-        </header>
-        <form>
-          <p id="alertModalText">HTML summary copied to clipboard.</p>
-          <footer>
-            <button type="button" id="alertClose">OK</button>
-          </footer>
-        </form>
-      </article>
-    </dialog>
-
-    <dialog id="taskEditModal">
-      <article>
-        <header>
-          <h3>Edit Task '<span class="itemName"></span>'</h3>
-        </header>
-        <form>
-          <label>
-            Task Name:
-            <input type="text" name="task-name" id="taskName">
-          </label>
-          <label>
-            Due Date:
-            <input type="date" name="task-due" id="taskDue">
-          </label>
-          <label>
-            Milestone:
-            <select name="task-milestone" id="taskMilestone"></select>
-          </label>          
-          <label>
-            Category:
-            <select name="task-category" id="taskCategory"></select>
-          </label>
-          <label>
-            Allocated To:
-            <select name="task-assigned" id="taskAssigned"></select>
-          </label>
-          <label>
-            Confluence Link:
-            <input type="url" name="confluence" id="confluenceUrl">
-          </label>
-          <label>
-            JIRA Link:
-            <input type="url" name="jira" id="jiraUrl">
-          </label>
-          <label>
-            Other Link:
-            <input type="url" name="other" id="otherUrl">
-          </label>
-          <label>
-            <input type="checkbox" id="taskCompleted">
-            Mark as Completed
-          </label>
-          <footer style="margin-top: 1rem;">
-            <button type="button" id="saveEditedTask" data-saveitemid="20">Save</button>
-            <button type="button" id="cancelEditModal" class="secondary">Cancel</button>
-          </footer>
-        </form>
-      </article>
-    </dialog>
-
-    <dialog id="aboutModal">
-      <article>
-        <header style="padding: 1rem;">
-          <h3>About this quine HTML dashboard</h3>
-        </header>
-        <div style="max-height: 60vh; overflow-y: auto; padding: 1rem;">
-          <p>This dashboard is a lightweight, interactive interface for managing team priorities and task assignments in real-time.</p>
-          <hr>
-          <strong>Features</strong>
-          <ul>
-            <li><strong>Task allocation</strong> — drag tasks between team lists (or into <em>Unallocated</em>). Reordering inside a person's list uses a <em>minimal-change</em> priority shuffle so only that list is affected.</li>
-            <li><strong>Perpetual tasks &amp; milestones</strong> — tasks and milestones can exist without a due date. Undated milestones act as thematic groupings, and tasks may be explicitly marked as <em>No due date</em>.</li>
-            <li><strong>Graphical Milestone Timeline</strong> — milestones with a due date are shown on the graphic timeline.</li>
-            <li><strong>Backlog-aware behavior</strong> — the divider is fixed in allocation lists (non-draggable) and supports dropping to <em>empty</em> above/below via subtle dropzones. Cross-divider moves 'mint' the smallest possible priority so items stay exactly where dropped.</li>
-            <li><strong>Filtering</strong> — filter by <em>Category</em>, <em>Milestone</em> (including dated, undated, and direct-dated tasks), and a matching text search.</li>
-            <li><strong>Inline editing</strong> — edit task names, due dates, milestone links, category, allocation, and links (Jira, Confluence, Other) in place.</li>
-            <li><strong>Completed tasks</strong> — mark done and restore later from the Completed view.</li>
-            <li><strong>Manage options</strong> — add/remove <em>Allocation Options</em> (team members) and <em>Categories</em> from their modals.</li>
-            <li><strong>Export</strong> — quick HTML summary for email/Word via the Export button.</li>
-            <li><strong>Read Only render mode</strong> — a saved html can be setup for view only via a variable set to false (edit the html - variable is 'renderReadOnly').</li>
-            <li><strong>Save &amp; persist</strong> — changes are saved in this self-contained (quine) HTML file.</li>
-            <li><strong>Tech</strong> — Pico CSS, jQuery, SortableJS, jquery.editable, d3-milestones.</li>
-          </ul>
-
-          <hr>          
-          <strong>What is a Quine?</strong>
-          <p>
-            A <strong>quine</strong> is a computer program that produces its own source code as output, without reading it from a file.
-            It's named after philosopher Willard Van Orman Quine.
-          </p>
-
-          <hr>
-          <strong>To-Do</strong>
-          <ul>
-            <li>Refactor javascript functions to allow a clean read-only export HTML option.</li>
-            <li>Add an optional in-work / progress indication for tasks.</li>
-            <li>Add a duration option for Milestones and Tasks.</li>
-            <li>Add a gantt/calendar view.</li>
-          </ul>
-
-
-        </div>
-        <footer style="padding: 1rem;">
-          <button id="closeAboutModal">Close</button>
-        </footer>
-      </article>
-    </dialog>
-
-    <dialog id="allocationModal">
-      <article>
-        <header>
-          <h3>Manage Allocation Options</h3>
-        </header>
-        <form>  
-          <label>Existing (Edit/Remove):</label>
-          <ul id="existingAllocationsList" style="max-height: 200px; overflow-y: auto;"></ul>
-          <hr>
-          <label>
-            Add New Allocation:
-            <input type="text" id="newAllocationInput" placeholder="e.g. Maria">
-          </label>
-          <label>
-            Type (optional):
-            <input type="text" id="newAllocationTypeInput" placeholder="e.g. Team or Job Title">
-          </label>
-          <button type="button" id="addAllocationOption">Add</button>
-          <hr>
-          <footer>
-            <button type="button" id="closeAllocationModal" class="secondary">Close</button>
-          </footer>
-        </form>
-      </article>
-    </dialog>
-    
-    <dialog id="categoryModal">
-      <article>
-        <header>
-          <h3>Manage Categories</h3>
-        </header>
-     
-          <label>Existing (click name to edit):</label>
-          <ul id="existingCategoriesList" style="max-height: 80vh; overflow-y: auto; padding: 0;"></ul>
-
-          <hr>
-          <label>
-            Add New Category:
-            <input type="text" id="newCatCode" placeholder="Code e.g. QA" style="max-width: 10rem;">
-          </label>
-          <label>
-            Name:
-            <input type="text" id="newCatName" placeholder="Name e.g. Quality Assurance">
-          </label>
-          <label>
-            Color:
-            <select id="newCatColor" name="newCatColor">
-              <option value="#22c55e" style="color:#22c55e">Green (#22c55e)</option>
-              <option value="#14b8a6" style="color:#14b8a6">Teal (#14b8a6)</option>
-              <option value="#06b6d4" style="color:#06b6d4">Cyan (#06b6d4)</option>
-              <option value="#0ea5e9" style="color:#0ea5e9">Sky (#0ea5e9)</option>
-              <option value="#3b82f6" style="color:#3b82f6">Blue (#3b82f6)</option>
-              <option value="#6366f1" style="color:#6366f1">Indigo (#6366f1)</option>
-              <option value="#8b5cf6" style="color:#8b5cf6">Violet (#8b5cf6)</option>
-              <option value="#a855f7" style="color:#a855f7">Purple (#a855f7)</option>
-              <option value="#d946ef" style="color:#d946ef">Fuchsia (#d946ef)</option>
-              <option value="#f43f5e" style="color:#f43f5e">Rose (#f43f5e)</option>
-              <option value="#ef4444" style="color:#ef4444">Red (#ef4444)</option>
-              <option value="#f97316" style="color:#f97316">Orange (#f97316)</option>
-              <option value="#f59e0b" style="color:#f59e0b">Amber (#f59e0b)</option>
-              <option value="#84cc16" style="color:#84cc16">Lime (#84cc16)</option>
-              <option value="#64748b" style="color:#64748b">Slate (#64748b)</option>
-              <option value="#71717a" style="color:#71717a">Zinc (#71717a)</option>
-            </select>
-            <select id="colorOptionsTemplate" hidden="">
-              <option value="#22c55e" style="color:#22c55e">Green (#22c55e)</option>
-              <option value="#14b8a6" style="color:#14b8a6">Teal (#14b8a6)</option>
-              <option value="#06b6d4" style="color:#06b6d4">Cyan (#06b6d4)</option>
-              <option value="#0ea5e9" style="color:#0ea5e9">Sky (#0ea5e9)</option>
-              <option value="#3b82f6" style="color:#3b82f6">Blue (#3b82f6)</option>
-              <option value="#6366f1" style="color:#6366f1">Indigo (#6366f1)</option>
-              <option value="#8b5cf6" style="color:#8b5cf6">Violet (#8b5cf6)</option>
-              <option value="#a855f7" style="color:#a855f7">Purple (#a855f7)</option>
-              <option value="#d946ef" style="color:#d946ef">Fuchsia (#d946ef)</option>
-              <option value="#f43f5e" style="color:#f43f5e">Rose (#f43f5e)</option>
-              <option value="#ef4444" style="color:#ef4444">Red (#ef4444)</option>
-              <option value="#f97316" style="color:#f97316">Orange (#f97316)</option>
-              <option value="#f59e0b" style="color:#f59e0b">Amber (#f59e0b)</option>
-              <option value="#84cc16" style="color:#84cc16">Lime (#84cc16)</option>
-              <option value="#64748b" style="color:#64748b">Slate (#64748b)</option>
-              <option value="#71717a" style="color:#71717a">Zinc (#71717a)</option>
-            </select>
-          </label>
-          <button type="button" id="addCategory">Add</button>
-          <hr>
-          <footer>
-            <button type="button" id="closeCategoryModal" class="secondary">Close</button>
-          </footer>
-
-      </article>
-    </dialog>
-
-</div>
-
-<div id="toast-container" style="position: fixed; top: 1rem; right: 1rem; z-index: 9999;"></div>
-
-  
-<!-- data -->
-<script>
-saveDate = "2026-01-21 17:30";
-pageTitle = "Demo Project";
-byLine = "Me, 2026";
-renderReadOnly = false;
-logo = `
-<svg width="2rem" height="2rem" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
-  <rect width="64" height="64" rx="10" ry="10" fill="currentColor" opacity="0.12"/>
-  <path d="M14 40c10-2 16-10 20-22 4 12 10 20 20 22-10 2-16 10-20 22-4-12-10-20-20-22z"
-        fill="currentColor" opacity="0.65"/>
-</svg>
-`;
-const allocationOptions = [
-  {
-    "name": "Avery (SE Lead)",
-    "type": "Systems Engineering Lead"
-  },
-  {
-    "name": "Blake (SW Lead)",
-    "type": "Software Team Lead"
-  },
-  {
-    "name": "Morgan (DevOps)",
-    "type": "DevOps / CI-CD Engineer"
-  },
-  {
-    "name": "Riley, M (Test)",
-    "type": "Test / Verification Engineer"
-  }
-];
-const milestones = [
-  {
-    "id": 10,
-    "name": "Kickoff / Charter Approved",
-    "date": "2026-02-03"
-  },
-  {
-    "id": 20,
-    "name": "ConOps + Needs Baselined",
-    "date": "2026-02-21"
-  },
-  {
-    "id": 30,
-    "name": "System Requirements Review (SRR)",
-    "date": "2026-03-14"
-  },
-  {
-    "id": 50,
-    "name": "Preliminary Design Review (PDR)",
-    "date": "2026-04-18"
-  },
-  {
-    "id": 60,
-    "name": "Critical Design Review (CDR)",
-    "date": "2026-06-06"
-  },
-  {
-    "id": 80,
-    "name": "Test Readiness Review (TRR)",
-    "date": "2026-08-01"
-  },
-  {
-    "id": 110,
-    "name": "Operational Readiness Review (ORR)",
-    "date": "2026-09-26"
-  },
-  {
-    "id": 120,
-    "name": "Release to Production",
-    "date": "2026-10-10"
-  },
-  {
-    "id": 999,
-    "name": "Ongoing / Evergreen / Perpetual",
-    "date": ""
-  }
-];
-const tasks = [
-  {
-    "id": 1,
-    "text": "Stand up repo + baseline templates",
-    "due": null,
-    "milestoneId": 10,
-    "assignedTo": "Blake (SW Lead)",
-    "priority": 1,
-    "category": "OPS",
-    "link-conf": "",
-    "link-jira": "",
-    "link-other": "",
-    "completed": false
-  },
-  {
-    "id": 2,
-    "text": "Define top-level workstreams + owners",
-    "due": null,
-    "milestoneId": 10,
-    "assignedTo": "Avery (SE Lead)",
-    "priority": 3,
-    "category": "PM",
-    "link-conf": "",
-    "link-jira": "",
-    "link-other": "",
-    "completed": false
-  },
-  {
-    "id": 3,
-    "text": "Draft ConOps + key operational scenarios",
-    "due": null,
-    "milestoneId": 20,
-    "assignedTo": "Avery (SE Lead)",
-    "priority": 4,
-    "category": "DOC",
-    "link-conf": "",
-    "link-jira": "",
-    "link-other": "",
-    "completed": false
-  },
-  {
-    "id": 4,
-    "text": "Stakeholder workshop: success criteria + constraints",
-    "due": null,
-    "milestoneId": 20,
-    "assignedTo": "Avery (SE Lead)",
-    "priority": 5,
-    "category": "PM",
-    "link-conf": "",
-    "link-jira": "",
-    "link-other": "",
-    "completed": false
-  },
-  {
-    "id": 5,
-    "text": "Capture system requirements + acceptance criteria",
-    "due": null,
-    "milestoneId": 30,
-    "assignedTo": "Avery (SE Lead)",
-    "priority": 6,
-    "category": "REQ",
-    "link-conf": "",
-    "link-jira": "",
-    "link-other": "",
-    "completed": false
-  },
-  {
-    "id": 6,
-    "text": "Software requirements: services, telemetry, update",
-    "due": null,
-    "milestoneId": 30,
-    "assignedTo": "Blake (SW Lead)",
-    "priority": 7,
-    "category": "REQ",
-    "link-conf": "",
-    "link-jira": "",
-    "link-other": "",
-    "completed": false
-  },
-  {
-    "id": 7,
-    "text": "System architecture: context diagram + interfaces",
-    "due": null,
-    "milestoneId": 50,
-    "assignedTo": "Avery (SE Lead)",
-    "priority": 15,
-    "category": "ARC",
-    "link-conf": "",
-    "link-jira": "",
-    "link-other": "",
-    "completed": false
-  },
-  {
-    "id": 8,
-    "text": "SW architecture: service boundaries + error strategy",
-    "due": null,
-    "milestoneId": 50,
-    "assignedTo": "Blake (SW Lead)",
-    "priority": 8,
-    "category": "ARC",
-    "link-conf": "",
-    "link-jira": "",
-    "link-other": "",
-    "completed": false
-  },
-  {
-    "id": 9,
-    "text": "CDR package: ICD v1 + design notes",
-    "due": null,
-    "milestoneId": 60,
-    "assignedTo": "Avery (SE Lead)",
-    "priority": 16,
-    "category": "DOC",
-    "link-conf": "",
-    "link-jira": "",
-    "link-other": "",
-    "completed": false
-  },
-  {
-    "id": 10,
-    "text": "CI pipeline: build + unit tests + static checks",
-    "due": null,
-    "milestoneId": 60,
-    "assignedTo": "Morgan (DevOps)",
-    "priority": 9,
-    "category": "OPS",
-    "link-conf": "",
-    "link-jira": "",
-    "link-other": "",
-    "completed": false
-  },
-  {
-    "id": 11,
-    "text": "Verification plan: map reqs → tests → evidence",
-    "due": null,
-    "milestoneId": 80,
-    "assignedTo": "Riley, M (Test)",
-    "priority": 17,
-    "category": "TST",
-    "link-conf": "",
-    "link-jira": "",
-    "link-other": "",
-    "completed": false
-  },
-  {
-    "id": 12,
-    "text": "Dry-run test execution on integration rig",
-    "due": null,
-    "milestoneId": 80,
-    "assignedTo": "Riley, M (Test)",
-    "priority": 18,
-    "category": "TST",
-    "link-conf": "",
-    "link-jira": "",
-    "link-other": "",
-    "completed": false
-  },
-  {
-    "id": 13,
-    "text": "ORR checklist: ops readiness + rollback plan",
-    "due": null,
-    "milestoneId": 110,
-    "assignedTo": "Morgan (DevOps)",
-    "priority": 19,
-    "category": "OPS",
-    "link-conf": "",
-    "link-jira": "",
-    "link-other": "",
-    "completed": false
-  },
-  {
-    "id": 14,
-    "text": "Release notes + support handover",
-    "due": null,
-    "milestoneId": 120,
-    "assignedTo": "Blake (SW Lead)",
-    "priority": 12,
-    "category": "DOC",
-    "link-conf": "",
-    "link-jira": "",
-    "link-other": "",
-    "completed": false
-  },
-  {
-    "id": 15,
-    "text": "Schedule PDR rehearsal (admin)",
-    "due": "2026-04-10",
-    "milestoneId": null,
-    "assignedTo": "Avery (SE Lead)",
-    "priority": 11,
-    "category": "PM",
-    "link-conf": "",
-    "link-jira": "",
-    "link-other": "",
-    "completed": false
-  },
-  {
-    "id": 16,
-    "text": "Cut beta build for integration rig (artifact drop)",
-    "due": "2026-06-27",
-    "milestoneId": null,
-    "assignedTo": "Blake (SW Lead)",
-    "priority": 13,
-    "category": "OPS",
-    "link-conf": "",
-    "link-jira": "",
-    "link-other": "",
-    "completed": false
-  },
-  {
-    "id": 17,
-    "text": "Decide time-sync approach (PTP vs NTP) + record decision",
-    "due": null,
-    "milestoneId": 50,
-    "assignedTo": null,
-    "priority": 10,
-    "category": "ARC",
-    "link-conf": "",
-    "link-jira": "",
-    "link-other": "",
-    "completed": false
-  },
-  {
-    "id": 18,
-    "text": "Bootstrap coding standards + formatter config",
-    "due": null,
-    "milestoneId": 10,
-    "assignedTo": "Blake (SW Lead)",
-    "priority": 0,
-    "category": "OPS",
-    "link-conf": "",
-    "link-jira": "",
-    "link-other": "",
-    "completed": true
-  },
-  {
-    "id": 19,
-    "text": "Weekly status update cadence (admin)",
-    "due": null,
-    "milestoneId": 999,
-    "assignedTo": "Avery (SE Lead)",
-    "priority": 2,
-    "category": "PM",
-    "link-conf": "",
-    "link-jira": "",
-    "link-other": "",
-    "completed": false
-  },
-  {
-    "id": -1,
-    "text": "-- Backlog Starts Here --",
-    "assignedTo": null,
-    "priority": 14,
-    "isBacklogDivider": true
-  },
-  {
-    "id": 20,
-    "text": "Undated Example Task",
-    "due": null,
-    "milestoneId": null,
-    "assignedTo": null,
-    "category": "TST",
-    "priority": 20,
-    "link-conf": "",
-    "link-jira": "",
-    "link-other": "",
-    "completed": false
-  }
-];
-const categories = [
-  {
-    "code": "PM",
-    "name": "Program / Admin",
-    "color": "#64748b"
-  },
-  {
-    "code": "REQ",
-    "name": "Requirements",
-    "color": "#06b6d4"
-  },
-  {
-    "code": "ARC",
-    "name": "Architecture & Design",
-    "color": "#8b5cf6"
-  },
-  {
-    "code": "OPS",
-    "name": "DevOps / Tooling",
-    "color": "#f97316"
-  },
-  {
-    "code": "TST",
-    "name": "Verification & Test",
-    "color": "#f59e0b"
-  },
-  {
-    "code": "DOC",
-    "name": "Docs & Reviews",
-    "color": "#a855f7"
-  }
-];
-</script>
-<!-- end data -->
-
-<script src="static/js/minimal-theme-switcher.js"></script>
-<script src="static/js/sidebar.js"></script>
-<script src="static/js/app.js"></script>
-
-</body></html>
+</html>

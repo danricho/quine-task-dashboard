@@ -1,155 +1,88 @@
 
-    /* APP.CSS */
-    :root {
-      --pico-form-element-spacing-vertical: 0.25rem;
-      --pico-form-element-spacing-horizontal: 0.75rem;
-      --pico-spacing: 0.75rem;
-      --pico-font-size: 100%;
-    }
+:root { --topbar-h: 60px; font-size: 90%; --sidebar-width: 15rem; }
 
-    .sticky-top { position: sticky; top: 0; z-index: 9999; }
-    
-    main > article { margin: var(--pico-block-spacing-vertical) 0; }
+html { scroll-padding-top: calc( var(--topbar-h) + 10px); }
+body { background: var(--background); color: var(--foreground); }
 
-    #milestoneTimelineHolder { margin: 1rem; }
-    #milestoneTimelineHolder { padding: .5rem .75rem; }
+/* Fixed (non-scrolling) banner */
+.topbar {
+  position: fixed;
+  inset: 0 0 auto 0;
+  height: var(--topbar-h);
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  border-bottom: 1px solid var(--color-border);
+  background: var(--background);
+}
 
-    #taskPriority input[type=date], #milestones input[type=date], #allocate input[type=date] { max-width: 250px;}
-    select.tsk-category, select.tsk-milestone { max-width: 350px;}
+.sidebar nav {
+  height: calc(100vh - var(--topbar-h));
+  margin-top: var(--topbar-h);
+}
 
-    .task-list {min-height: 1.5rem;}
-    .task {
-      display: block;
-      --pico-background-color: var(--pico-form-element-background-color);
-      --pico-border-color: var(--pico-form-element-border-color);
-      --pico-color: var(--pico-form-element-color);
-      --pico-box-shadow: none;      
-      border: var(--pico-border-width) solid var(--pico-form-element-border-color);
-      border-radius: var(--pico-border-radius);
-      outline: 0;
-      background-color: var(--pico-background-color);
-      box-shadow: var(--pico-box-shadow);
-      color: var(--pico-color);
-      font-weight: var(--pico-font-weight);
-      transition: background-color var(--pico-transition), border-color var(--pico-transition), color var(--pico-transition), box-shadow var(--pico-transition);
-      padding: var(--pico-form-element-spacing-vertical) var(--pico-form-element-spacing-horizontal);
-      margin-bottom: calc(var(--pico-spacing)/2);
-      cursor: default;
-    }
-    /* .task.late { border: var(--pico-border-width) solid var(--pico-form-element-invalid-active-border-color); } */
-    .task.late .due { color: var(--pico-form-element-invalid-active-border-color); }
-    /* .task.soon { border: var(--pico-border-width) solid var(--pico-color-pumpkin-500); } */
-    .task.soon .due { color: var(--pico-color-pumpkin-500); }
-    .task span.delete {
-      background: none;
-      border: none;
-      color: var(--pico-form-element-invalid-active-border-color);
-      font-weight: bold;
-      cursor: pointer;
-      float:right; 
-      margin-left: 0.5rem;
-    }
-    .task .complete {
-      background: none;
-      border: none;
-      color: var(--pico-form-element-valid-active-border-color);
-      cursor: pointer;
-    }
+main { margin-top: var(--topbar-h); }
 
-    #milestoneList>div>*[disabled] { opacity:1.0 }
-    #milestoneList>div:hover>input { --pico-background-color:var(--pico-form-element-selected-background-color); }
-    .task:nth-child(2n){ --pico-background-color:var(--pico-form-element-active-background-color); }
-    .task:hover { --pico-background-color:var(--pico-form-element-selected-background-color); }
+main {
+  /* Headings — clean hierarchy & vertical rhythm */
+  h1, h2, h3, h4, h5, h6 {          
+    font-weight: 600;
+  }
+  h0 { font-size: 2.25rem; /* text-4xl */ } 
+  h1 { font-size: 1.875rem; /* text-3xl */ }
+  h2 { font-size: 1.5rem; /* text-2xl */ }
+  h3 { font-size: 1.25rem; /* text-xl */ }
+  h4 { font-size: 1.125rem; /* text-lg */ }
+  h5 { font-size: 1rem; /* text-base */ font-weight: 500; }
+  h6 { font-size: 1rem; /* text-base */ font-weight: 500; }
 
-    .milestone-vis-today * { border-color: red; }
+  /* Lists — readable and predictable */
+  ul, ol { margin: 1em 0; padding-left: 1.5em; }
+  li { margin: 0.25em 0; }
+  /* Nested lists */
+  ul ul,
+  ul ol,
+  ol ul,
+  ol ol { margin-top: 0.25em; margin-bottom: 0.25em; }
+  ul { list-style-type: disc; }
+  ol { list-style-type: decimal;  }
+}
 
-    #menuAllocationOptions {margin-bottom: 0}
+/* .task > * { border: magenta solid 1px; }
+.task > * > * { border: cyan solid 1px; }
+.task > * > * > * { border: yellow solid 1px; }
+.task > * > * > * > * { border: green solid 1px; }  */
 
-    
+.backlog-divider {
+  display: flex;
+  align-items: center;
+  text-align: center;
+}
+.backlog-divider::before,
+.backlog-divider::after {
+  content: '';
+  flex: 1;
+  opacity: 0.5;
+  border-bottom-style: var(--tw-border-style);
+  border-bottom-width: 1px;
+}
+.backlog-divider:not(:empty)::before { margin-right: 1em; }
+.backlog-divider:not(:empty)::after { margin-left: 1em; }
 
-    .completed-task .taskName {
-      opacity: 0.6;
-      text-decoration: line-through;
-    }
+.toaster {
+  max-width: calc(var(--spacing) * 200);
+}
+.toaster .toast[data-category="success"] svg,
+.toaster .toast[data-category="success"] h2
+  { color: var(--color-green-600); }
+.toaster .toast[data-category="success"] .toast-content
+  { border-color: var(--color-green-600); }
 
-    .ms-date.late { color: var(--pico-form-element-invalid-active-border-color); }
-    .ms-date.soon { color: var(--pico-color-pumpkin-500); }
+/*dialog div { max-width: calc(var(--spacing) * 200); }
+dialog#dialog-task-timeline div { max-width: 80%; }*/
 
-    #milestoneList [role=group] { margin-bottom: calc(var(--pico-spacing)/2) }
-    .right { text-align: right; }
+input[type="date"] { width: fit-content; }
 
-    .category { font-weight: 600; width: 2.5rem; display: inline-block; }
-
-    .assignee { }
-    #allocate .assignee { display: none; }
-
-    .guidance, .active-filter {font-size: 0.9rem; font-style: italic; color: var(--pico-muted-color); }
-
-    details summary::after { height: 2rem; }
-
-    .tentative-btn {
-      border: 1px solid var(--pico-secondary);
-      background: transparent;
-      color: var(--pico-secondary);
-      cursor: pointer;
-    }
-
-    .tentative-btn.active {
-      background: var(--pico-secondary);
-      color: white;
-    }
-
-    .tentative {
-      font-style: italic;
-      opacity: 0.7;
-    }
-
-    #openFilters.active {
-      background-color: var(--pico-del-color, #d9534f); /* fallback red */
-      color: white;
-      border-color: var(--pico-del-color, #d9534f);
-    }
-        
-    .task.backlog-divider {    
-      color: var(--pico-form-element-border-color);
-      background: none;
-      border: none;
-      /* background-color: var(--pico-form-element-border-color); */
-    } 
-    
-    
-    .backlog_divider {
-      display: flex;
-      align-items: center;
-      text-align: center;
-      color: var(--pico-color);      
-      opacity: 0.5;
-    }
-
-    .backlog_divider::before,
-    .backlog_divider::after {
-      content: '';
-      flex: 1;
-      border-bottom: 1px solid var(--pico-color);  
-      opacity: 0.5;
-    }
-
-    .backlog_divider:not(:empty)::before {
-      margin-right: .5em;
-    }
-
-    .backlog_divider:not(:empty)::after {
-      margin-left: .5em;
-    }
-   
-    
-    .backlog-dropzone {
-      height: 2.25rem;
-      margin: calc(var(--pico-spacing) / 2);
-      border: 1px dashed var(--pico-color);  
-      opacity: 0.1;
-      border-radius: 8px;
-      pointer-events: auto; 
-      background: none;
-      text-align: center;
-    }
+.milestone-vis-today * { border-color: red; }

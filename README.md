@@ -1,6 +1,5 @@
 > [!IMPORTANT]
-> As of the commit introducing this README, a major rewrite is nearing completion and will be released as **v2.0.0**.  
-> This documentation reflects the **v2.0.0 architecture and feature set**.
+> As of this commit, version 2.0.0 is being introduced, however there remains some functional development (Coming Soon™).
 
 # Quine Task Dashboard
 
@@ -14,7 +13,11 @@ The concept is named after philosopher **Willard Van Orman Quine**, and in this 
 
 ## Screenshots
 
-> Coming Soon™  
+[![Screenshot composite (dark + light)](docs/screenshot-light-both.png)](docs/screenshot-light-both.png)
+
+**Individual themes:**
+- [Dark mode](docs/screenshot-dark-mode.png)
+- [Light mode](docs/screenshot-light-mode.png)
 
 ## Features
 

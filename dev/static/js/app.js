@@ -1,38 +1,32 @@
-/* APP.JS */
-
-// SOME GLOBAL VARIABLES
-let milestoneMap = {};
-let categoryMap = {};
-const BACKLOG_MARKER_ID = -1; // Reserved ID
-let milestoneTimelineVis = null; // No milestime graphical timeline initially shown
-let hasUnsavedChanges = false; // used to know if something has been edited and so the save button should be active and a warning on page close
-let confirmCallback = null; // stores a callback when a confirm is active on the UI
-const FILTER_DIRECT = '__DIRECT__'; // pseudo-milestone for "has its own due date"
+let scrollPos = 0;            // used to restore the scroll position after a re-render
+let milestoneMap = {};        // quicker lookups of milestones from ID
+let categoryMap = {};         // quicker lookups of categories from code
+let resourceMap = {};         // quicker lookups of categories from code
+let taskMap = {};             // quicker lookups of tasks from ID
+let showCompleted = false;    // enables the rendering of completed tasks
+let unsavedChanges = false;   // used to know if something has been edited and so the save button should be active and a warning on page close
+const readOnlyMode = false;
 const activeFilters = { categories: new Set(), milestones: new Set(), searchText: "" }; // tracks active filters
 
-/*==============================================================================
-THESE ARE GENERAL HELPER/UTILITY FUNCTIONS
-==============================================================================*/
 
-// returns a suitable string for a HTML anchor (id) from a string input
-function createHtmlIdFromString(name) {
-  return String(name)
-    .toLowerCase()
-    .replaceAll(" ", "-")
-    .replaceAll("(", "")
-    .replaceAll(",", "")
-    .replaceAll(")", "")
-    .replaceAll(":", "");
+// --------------------------------------------------- //
+//  HELPER FUNCTIONS
+// --------------------------------------------------- //
+
+// returns true if the input date string is in the past (compared to today) - doesn't check for validity
+function isPastDate(dateStr) {
+  const today = new Date();
+  today.setHours(23, 59, 59, 999); // normalize to right on midnight tonight
+  const due = new Date(dateStr);
+  return due < today;
 }
-
-// returns a date from string input in format "YYYY-MM-DD" or null
-function parseYMD(dateStr) {
-  // dateStr: "YYYY-MM-DD" or falsy
-  if (!dateStr) return null;
-  const d = new Date(dateStr);
-  return isNaN(d.getTime()) ? null : d;
+// returns true if the input date string is in the coming week (compared to today) - doesn't check for validity
+function isSoon(dateStr) {
+  const today = new Date();
+  today.setHours(23, 59, 59, 999); // normalize to right on midnight tonight
+  const due = new Date(dateStr);
+  return (due - today)/1000 <= ((USERDATA.config.soon_duration || 7) * 24 * 60 * 60);
 }
-
 // returns today's date as a string in format "YYYY-MM-DD"
 function todayYMD() {
   const d = new Date();
@@ -41,7 +35,16 @@ function todayYMD() {
   const dd = String(d.getDate()).padStart(2, "0");
   return `${yyyy}-${mm}-${dd}`;
 }
-
+// converts a string into a ID attribute suitable string
+function createHtmlIdFromString(str) {
+  return String(str)
+    .toLowerCase()
+    .replaceAll(" ", "-")
+    .replaceAll("(", "")
+    .replaceAll(",", "")
+    .replaceAll(")", "")
+    .replaceAll(":", "");
+}
 // returns now as a string in format "YYYY-MM-DD HH:MM"
 function nowString() {
     const today = new Date();
@@ -55,480 +58,596 @@ function nowString() {
 
 }
 
-// returns true if the input string is a valid date string
-function isValidDate(input) {
-  // Check format using regex
-  const regex = /^\d{4}-\d{2}-\d{2}$/;
-  if (!regex.test(input)) return false;
+// --------------------------------------------------- //
+//  USER DATA MANIPULATION FUNCTIONS
+// --------------------------------------------------- //
 
-  // Parse the components
-  const [year, month, day] = input.split('-').map(Number);
-
-  // Check for valid date
-  const date = new Date(input);
-  return (
-    date instanceof Date &&
-    !isNaN(date) &&
-    date.getFullYear() === year &&
-    date.getMonth() === month - 1 &&
-    date.getDate() === day
-  );
+// returns the color code for a category from the category code
+function colorFromCategoryCode(code){
+  if (code==null) return '';
+  categoryWithCode = categoryMap[code.toLowerCase()]; //USERDATA.categories.find(c => c.code.toLowerCase() === code.toLowerCase());
+  if (categoryWithCode) { return categoryWithCode.color; }
+  return 'default';
 }
-
-// returns true if the input date string is in the past (compared to today) - doesn't check for validity
-function isPastDate(dateStr) {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0); // normalize to midnight
-  const due = new Date(dateStr);
-  return due < today;
+// returns the name of a category from a category code
+function nameFromCategoryCode(code){
+  if (code==null) return 'No Category';
+  categoryWithCode = categoryMap[code.toLowerCase()]; //USERDATA.categories.find(c => c.code.toLowerCase() === code.toLowerCase());
+  if (categoryWithCode) { return categoryWithCode.name; }
+  return 'Undefined Category';
 }
-
-// returns true if the input date string is in the coming week (compared to today) - doesn't check for validity
-function isSoon(dateStr) {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0); // normalize to midnight
-  const due = new Date(dateStr);
-  return (due - today)/1000 < (7 * 24 * 60 * 60);
-}
-
-/*==============================================================================
-THESE ARE UTILITY FUNCTIONS FOR USER DATA
-==============================================================================*/
-
-// returns true if name is in one of the allocationOptions name attribute, otherwise false
-function allocationNameExists(name) {
-  return allocationOptions.some(o => o.name === name);
-}
-
-// removes an entry from allocationOptions if has a matching name attribute
-function removeAllocationByName(name) {
-  const idx = allocationOptions.findIndex(o => o.name === name);
-  if (idx >= 0) allocationOptions.splice(idx, 1);
-}
-
-// returns a sorted list of milestones - bye date for dated first, undated last
-function sortMilestonesDatedFirst(a, b) {
-  const da = parseYMD(a?.date);
-  const db = parseYMD(b?.date);
-
-  if (!da && !db) return 0;
-  if (!da) return 1;   // undated last
-  if (!db) return -1;
-  return da - db;
-}
-
-// returns unique milestone id for creating a new one
-function generateUniqueMilestoneId() {
-  return milestones.length > 0
-    ? Math.max(...milestones.map(m => m.id)) + 1
-    : 1;
-}
-
-// returns unique task id for creating a new one
-function generateUniqueTaskId() {
-  return tasks.length > 0
-    ? Math.max(...tasks.map(t => t.id)) + 1
-    : 1;
-}
-
-// returns a matching milestone by ID or null
-function getMilestoneById(id) {
+// returns a matching milestone by ID, or null
+function milestoneFromId(id) {
   return milestoneMap[id] || null;
 }
+// returns a matching task by ID, or null
+function taskFromId(id) {
+  return taskMap[id] || null;
+}
+// returns unique milestone id for creating a new one
+function generateUniqueMilestoneId() {
+  return USERDATA.milestones.length > 0
+    ? Math.max(...USERDATA.milestones.map(m => m.id)) + 1
+    : 1;
+}
+// returns unique task id for creating a new one
+function generateUniqueTaskId() {
+  return USERDATA.tasks.length > 0
+    ? Math.max(...USERDATA.tasks.map(t => t.id)) + 1
+    : 1;
+}
+// returns unique mielstone id for creating a new one
+function generateUniqueMilestoneId() {
+  return USERDATA.milestones.length > 0
+    ? Math.max(...USERDATA.milestones.map(t => t.id)) + 1
+    : 1;
+}
+// updates task activeness and priority from DOM location on page (allocation is done on drag or on edit)
+function updateTaskPriorityFromPage(){
+  console.log("PRIORITY: Updating priority / active status from DOM.")
+  let counter = 1;
+  $(".task-list").each(function(index, taskList) {
+    $(taskList).find('.task').each(function(index, taskEl) {
+      taskId = Number($(taskEl).attr("data-itemid"));
+      task = taskMap[taskId];
+      if (task){
+        task.priority = counter;
+        task.active = $(taskList).hasClass("tasks-active")
+        counter += 1;
+      }
+    })
+  })
+}
+// ised with filter clause to reduse task list to matches of the active filters
+function matchesActiveFilters(task) {
+  
+  // Category
+  if (activeFilters.categories.size > 0) {
+    if (!task.category || !activeFilters.categories.has(task.category.toLowerCase())) return false;
+  }
 
-// adds a backlog divider task into the tasks list in case it isn't in the user data yet
-function injectBacklogDivider() {
-  if (!tasks.find(t => t.id === BACKLOG_MARKER_ID)) {
-    tasks.push({
-      id: BACKLOG_MARKER_ID,
-      text: "-- Backlog Starts Here --",
-      assignedTo: null,
-      priority: tasks.length, // append to end
-      isBacklogDivider: true
-    });
+  // Milestone
+  if (activeFilters.milestones.size > 0) {
+    const matchesMs = activeFilters.milestones.has(String(task.milestoneId));
+    if (!matchesMs) return false;
+  }
+
+  // Text match (case-insensitive) against task text OR milestone name
+  if (activeFilters.searchText && activeFilters.searchText.trim() !== "") {
+    const needle = activeFilters.searchText.trim().toLowerCase();
+    const taskText = (task.text || "").toLowerCase();
+    let msName = "";
+    if (task.milestoneId) {
+      const ms = milestoneMap[task.milestoneId];
+      if (ms) msName = (ms.name || "").toLowerCase();
+    }
+    if (!taskText.includes(needle) && !msName.includes(needle)) return false;
+  }
+
+  return true;
+}
+// this function exports userdata to a JSON file (button in configuration section)
+function exportUserData(filename = "USERDATA.json") {
+  try {
+    const jsonString = JSON.stringify(USERDATA, null, 2); // pretty print
+    const blob = new Blob([jsonString], { type: "application/json" });
+
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    console.log("USERDATA exported");
+    showToast('success', 'USERDATA Exported', "Data was saved to the JSON file.");
+  } catch (err) {
+    console.error("Export failed:", err);
   }
 }
+// this function imports userdata from a JSON file (button in configuration section)
+function importUserData() {
+  return new Promise((resolve, reject) => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "application/json";
 
-// this handles setting appropriate priorities when tasks are moved - triggered by dragging tasks
-function rebalanceGroupPrioritiesForDomOrder(optionName, containerEl) {
-  // --- Identify divider & split DOM into above/below arrays ---
-  const dividerEl = containerEl.querySelector('.backlog-divider, [data-itemid="' + BACKLOG_MARKER_ID + '"]');
-  const allTaskEls = Array.from(containerEl.querySelectorAll('.task'))
-    .filter(el => !el.classList.contains('backlog-dropzone'));
-
-  const idsAbove = [];
-  const idsBelow = [];
-  let seenDivider = false;
-
-  for (const el of allTaskEls) {
-    const id = Number(el.dataset.itemid);
-    if (id === BACKLOG_MARKER_ID || el === dividerEl) {
-      seenDivider = true;
-      continue;
-    }
-    (seenDivider ? idsBelow : idsAbove).push(id);
-  }
-
-  // --- Resolve in-group tasks for this allocation option ---
-  const inGroup = tasks
-    .filter(t => !t.completed)
-    // .filter(t => (optionName ? t.assignedTo === optionName : (t.assignedTo === null || !allocationOptions.includes(t.assignedTo))))
-    .filter(t => (optionName ? t.assignedTo === optionName : (t.assignedTo === null || !allocationNameExists(t.assignedTo))))
-    .filter(t => t.id !== BACKLOG_MARKER_ID);
-
-  // Divider priority (fixed boundary)
-  const dividerTask = tasks.find(t => t.id === BACKLOG_MARKER_ID);
-  const dividerPriority = dividerTask ? dividerTask.priority : Number.MAX_SAFE_INTEGER;
-
-  // Quick access
-  const getTaskById = (id) => tasks.find(t => t.id === id);
-  const getPriority = (id) => (getTaskById(id)?.priority);
-
-  // Helper to decide if an id "belongs" to this segment by current priority
-  const belongsAbove = (p) => p < dividerPriority;
-  const belongsBelow = (p) => p > dividerPriority;
-
-  // --- Core: assign priorities within a segment without renumbering others ---
-  function assignSegment(ids, isAbove) {
-    // Side test
-    const keepSide = isAbove
-      ? (p) => p < dividerPriority
-      : (p) => p > dividerPriority;
-
-    const getTaskById = (id) => tasks.find(t => t.id === id);
-    const getPriority = (id) => {
-      const t = getTaskById(id);
-      return t ? Number(t.priority) : undefined;
-    };
-
-    const incumbents = ids.filter(id => {
-      const p = getPriority(id);
-      return p != null && keepSide(p);
-    });
-    const crossers = ids.filter(id => !incumbents.includes(id));
-
-    // --- Case 1: pure in-segment reorder (no crossers)
-    if (crossers.length === 0) {
-      // Use the same set of priorities this segment already had,
-      // but assign them in the new DOM order.
-      const priorities = incumbents
-        .map(id => getPriority(id))
-        .sort((a, b) => a - b);
-
-      ids.forEach((id, i) => {
-        const t = getTaskById(id);
-        if (t) t.priority = priorities[i];
-      });
-      return;
-    }
-
-    // --- Case 2: some items crossed the divider: mint only for crossers, keep incumbents
-    const newP = new Map(); // id -> priority (kept or minted)
-
-    // Seed incumbents with their current priorities (minimal change)
-    for (const id of incumbents) newP.set(id, getPriority(id));
-
-    // Helper to fetch a priority for neighbor if known/valid-for-side
-    const neighborPriority = (id) => {
-      if (id == null) return undefined;
-      if (newP.has(id)) return newP.get(id);
-      const p = getPriority(id);
-      return (p != null && keepSide(p)) ? p : undefined;
-    };
-
-    // Walk left-to-right assigning priorities to crossers so they land correctly
-    for (let i = 0; i < ids.length; i++) {
-      const id = ids[i];
-      if (newP.has(id)) continue; // incumbent, already seeded
-
-      // Find nearest DOM neighbors that already have side-appropriate priorities
-      const prevId = [...ids.slice(0, i)].reverse().find(j => newP.has(j) || keepSide(getPriority(j) ?? NaN));
-      const nextId = ids.slice(i + 1).find(j => newP.has(j) || keepSide(getPriority(j) ?? NaN));
-
-      // Numeric bounds
-      let lower = (isAbove ? -Infinity : dividerPriority);
-      let upper = (isAbove ? dividerPriority : +Infinity);
-
-      const pPrev = neighborPriority(prevId);
-      const pNext = neighborPriority(nextId);
-      if (pPrev != null) lower = pPrev;
-      if (pNext != null) upper = pNext;
-
-      // Choose a number strictly between lower and upper; fall back near divider
-      let minted;
-      if (Number.isFinite(lower) && Number.isFinite(upper)) {
-        minted = (lower + upper) / 2;
-        if (minted <= lower || minted >= upper) minted = lower + (upper - lower) / 2;
-      } else if (!Number.isFinite(lower) && Number.isFinite(upper)) {
-        minted = upper - 1;
-      } else if (Number.isFinite(lower) && !Number.isFinite(upper)) {
-        minted = lower + 1;
-      } else {
-        // whole segment was empty before; anchor to divider
-        minted = isAbove ? (dividerPriority - 1) : (dividerPriority + 1);
+    input.onchange = (event) => {
+      const file = event.target.files[0];
+      if (!file) {
+        reject("No file selected");
+        return;
       }
 
-      newP.set(id, minted);
-    }
+      const reader = new FileReader();
 
-    // Apply
-    newP.forEach((p, id) => {
-      const t = getTaskById(id);
-      if (t) t.priority = p;
+      reader.onload = (e) => {
+        try {
+          const json = JSON.parse(e.target.result);
+          USERDATA = json; // override variable
+          console.log("USERDATA imported:", USERDATA);
+          resolve(USERDATA);
+          updatePage();
+          showToast('success', 'USERDATA Imported', "Data was replaced with the data from the JSON file.");
+        } catch (err) {
+          reject("Invalid JSON file");
+        }
+      };
+
+      reader.onerror = () => reject("Error reading file");
+      reader.readAsText(file);
+    };
+
+    input.click();
+  });
+}
+
+// --------------------------------------------------- //
+//  DOM RENDERING FUNCTIONS + HELPERS/TEMPLATES
+// --------------------------------------------------- //
+
+function setChangesPresent(changes){  
+  $("button#button-save").prop("disabled", !changes)
+  $("button#button-save-read-only").prop("disabled", changes)
+  $("button#button-export-clipboard").prop("disabled", changes)
+  if (changes){ $("button#button-save").addClass("btn-primary ").removeClass("btn-secondary")
+  }      else { $("button#button-save").addClass("btn-secondary").removeClass("btn-primary ") }
+  unsavedChanges = changes;
+
+}
+// clears all data from the DOM (useful for reset/saving)
+function sanitizeDOM(){
+  $(".count").text("X");
+  $("#milestone-list").html("");
+  $("#allocations-list").html("");
+  $("#completed-task-list").html("");
+  $("#milestoneTimeline").html("");
+  $("#dialog-task-timeline .timeline-holder").html("");
+  $("#menu-allocations-list").html("");
+  $(document).prop('title', "Project Title");
+  $("#heading-title").text("Project Title");
+  $("#heading-logo").html("");
+  $('head').find('link[rel="icon"], link[rel="shortcut icon"]').remove();
+  $('select:not(.preserve)').html("");
+  $('#alert-delete-task-name, #alert-complete-task-name').text("");
+  $('input').val("");
+  $('textarea').val("");
+
+  cln = $('.select-multiple-categories').clone().removeAttr("data-select-initialized");
+  cln.find('[role="listbox"]').html("");
+  $('.select-multiple-categories').replaceWith(cln);
+
+  cln = $('.select-multiple-milestones').clone().removeAttr("data-select-initialized");
+  cln.find('[role="listbox"]').html("");
+  $('.select-multiple-milestones').replaceWith(cln);
+
+  $('#last-saved').text("");
+  $(".editable-resource-entry:not(.hidden)").remove();
+  $(".editable-category-entry:not(.hidden)").remove();
+  // reset this button text
+  $('button.show-completed-tasks').text("Show Completed Task List");    
+  $("#old-task-deletion-group").addClass("hidden");  
+  $("#active-filter-string").html("");
+}
+// this renders a timeline into the DOM and returns the handle for it
+function renderTimeline(selector, data, callbackfn){
+  return window.milestonesViz(selector)
+    .mapping({
+      timestamp: "date",
+      text: "title"
+    })
+    .parseTime("%Y-%m-%d")
+    .aggregateBy('day')
+    .labelFormat("%b %d")
+    .optimize(true)
+    .render(data)
+    .renderCallback(callbackfn);
+}
+// renders the UI select dropdowns allowing selection of categories, resources and milestones
+function renderDropdowns() {
+
+  let optionsArr = []
+  USERDATA.resources.forEach(r => {
+    optionsArr.push($('<option>', { value: r.name}).text(`${r.name} - ${r.type}`))
+  });
+  optionsArr.push($('<option>', { value: ""}).text("- UNALLOCATED -"));
+  $('select.select-resources').html("").append(optionsArr);
+
+  optionsArr = []
+  optionsArr.push($('<option>', { value: ""}).text("- NO MILESTONE -"));
+  USERDATA.milestones.forEach(m => {
+    optionsArr.push($('<option>', { value: m.id}).text(m.name));
+  });
+  $("select.select-milestone").html("").append(optionsArr);
+
+  optionsArr = []
+  optionsArr.push($('<option>', { value: ""}).text("- NO CATEGORY -"));
+  USERDATA.categories.forEach(c => {
+    optionsArr.push($('<option>', { value: c.code}).text(c.name));
+  });
+  $("select.select-category").html("").append(optionsArr);
+
+  // multi-selects for filter:
+
+  optionsArr = []
+  USERDATA.categories.forEach(c => {
+    optionsArr.push($('<div>', { role: "option", "data-value": c.code.toLowerCase(), "data-label": c.name}).html(`<span>${c.name}</span>`));
+  });
+  cln = $('.select-multiple-categories').clone().removeAttr("data-select-initialized");
+  cln.find('[role="listbox"]').html("").append(optionsArr);
+  $('.select-multiple-categories').replaceWith(cln);
+
+  optionsArr = []
+  USERDATA.milestones.forEach(m => {
+    optionsArr.push($('<div>', { role: "option", "data-value": m.id, "data-label": m.name}).html(`<span>${m.name}</span>`));
+  });
+  cln = $('.select-multiple-milestones').clone().removeAttr("data-select-initialized");
+  cln.find('[role="listbox"]').html("").append(optionsArr);
+  $('.select-multiple-milestones').replaceWith(cln);
+
+}
+// renders the active filter string and shows the overlay. Also updates the clear button availability
+function renderActiveFilterStringAndButtonState() {
+  const parts = [];
+
+  // (optional) text search
+  if (String(activeFilters.searchText).trim() !== "") {
+    parts.push(`Contains "${String(activeFilters.searchText).trim()}"`);
+  }
+
+  // categories
+  if (activeFilters.categories.size > 0) {
+    const names = [...activeFilters.categories].map(code => {
+      const c = categoryMap[code];
+      return c ? c.name : code;
     });
+    parts.push(`Category in [ ${names.join(", ")} ]`);
   }
 
-  // Assign above and below independently
-  assignSegment(idsAbove, true);
-  assignSegment(idsBelow, false);
+  // milestones
+  if (activeFilters.milestones.size > 0) {
+    const names = [...activeFilters.milestones].map(idStr => {      
+      const ms = milestoneMap[Number(idStr)];
+      return ms ? ms.name : `Milestone ${idStr}`;
+    });
+    parts.push(`Milestone in [ ${names.join(", ")} ]`);
+  }
+
+  if (parts.length === 0) {
+    $("#active-filter-string").parent().addClass("hidden");
+    $("button#button-filter-clear").prop("disabled", true).addClass("btn-secondary").removeClass("btn-primary");
+    $("#active-filter-string").html("No active filters. Showing all tasks.");
+  }else{
+    $("#active-filter-string").parent().removeClass("hidden");    
+    $("button#button-filter-clear").prop("disabled", false).addClass("btn-primary").removeClass("btn-secondary");
+    $("#active-filter-string").html("<strong>Active task filters:</strong> " + parts.join(" AND "));
+  }
 }
-
-// this provides a priority number (checking existing tasks) for when a task is created
-function normalizeAndGetNextPriority() {
-  // Filter out tasks with undefined/null priorities
-  const validTasks = tasks.filter(t => typeof t.priority === 'number');
-
-  // Sort by current priority
-  validTasks.sort((a, b) => a.priority - b.priority);
-
-  // Reassign priorities to remove gaps
-  validTasks.forEach((task, index) => {
-    task.priority = index;
-  });
-
-  // Return the next available priority (which is now tasks.length)
-  return validTasks.length;
+// this shows a temporary 'taost' popup notifaction
+function showToast(cat, title, description){
+  console.log("TOAST:", $("<div>").html(description).text());
+  document.dispatchEvent(new CustomEvent('basecoat:toast', {
+    detail: {
+      config: { category: cat, title: title,
+        description: description
+      }
+    }
+  }));
 }
+// this does the calling of the rendering functions (page wide)
+function updatePage(){
 
-/*==============================================================================
-THESE ARE UI UTILITY FUNCTIONS
-==============================================================================*/
+  // console.group("updatePage()")
 
-// this shows a toast (temporary message) in 3 formats 
-function showToast(message, type = "success", duration = 3000) {
-  // showToast("Something went wrong.", "error");
-  // showToast("You’re in offline mode.", "warning");
-  // showToast("Milestone updated and tasks adjusted.", "success");
+  console.log("EVENT: Page update triggered")
+  // Save scroll position
+  scrollPos = window.scrollY
 
-  const container = document.getElementById("toast-container");
+  milestoneMap = Object.fromEntries(USERDATA.milestones.map(m => [m.id, m]));
+  categoryMap = Object.fromEntries(USERDATA.categories.map(c => [c.code.toLowerCase(), c]));
+  resourceMap = Object.fromEntries(USERDATA.resources.map(r => [r.name.toLowerCase(), r]));
+  taskMap = Object.fromEntries(USERDATA.tasks.map(c => [c.id, c]));
 
-  const toast = document.createElement("div");
-  toast.className = `toast ${type}`;
-  toast.innerHTML = message;
+  sanitizeDOM();
 
-  container.appendChild(toast);
+  if (readOnlyMode){ USERDATA.config.title = "[READONLY] " + USERDATA.config.title }
+  $(document).prop('title', USERDATA.config.title);
+  $("#heading-title").text(USERDATA.config.title);
+  $("#heading-logo").html(USERDATA.config.logo);
+  $('#last-saved').text(USERDATA.config.last_saved);
+  $(':root').css('--primary', USERDATA.config.primary_color);
 
-  // Force reflow to enable animation
-  requestAnimationFrame(() => {
-    toast.classList.add("show");
-  });
+  // encode and set svg as favicon
+  var encoded = 'data:image/svg+xml,' + encodeURIComponent(USERDATA.config.logo).replace(/'/g, "%27").replace(/"/g, "%22");
+  $('<link>', { rel: 'icon', type: 'image/svg+xml', href: encoded }).appendTo('head');
 
-  // Auto-remove
-  setTimeout(() => {
-    toast.classList.remove("show");
-    setTimeout(() => toast.remove(), 300);
-  }, duration);
-}
-
-// displays the confirmation modal (with callback for confirmation)
-function showConfirmModal(message, onConfirm, contextLabel = null) {
-  $('#confirmModalText').text(message);
-  $('#confirmModalTitle').text(contextLabel ? `Confirm for ${contextLabel}` : 'Confirm Action');
-  confirmCallback = onConfirm;
-  $('#confirmModal')[0].showModal();
-}
-
-// displays the alert modal
-function showAlertModal(message, contextLabel = null) {
-  $('#alertModalText').text(message);
-  $('#alertModalTitle').text(contextLabel ? `Notice for ${contextLabel}` : 'Alert');
-  $('#alertModal')[0].showModal();
-}
-
-// this is used in the renderers to create elements
-function el(tag, text, ...children) {
-  const e = document.createElement(tag);
-  if (text) e.textContent = text;
-  children.forEach(c => { if (c) e.appendChild(c); });
-  return e;
-}
-
-// this is used in the renderers to create links (<a href>)
-function linkTag(url, label) {
-  const a = document.createElement("a");
-  a.href = url;
-  a.target = "_blank";
-  a.rel = "noopener noreferrer";
-  a.textContent = `[${label}]`;
-  return a;
-}
-
-// Warn user before closing or navigate away (if unsaved changes exist)
-window.addEventListener("beforeunload", function (e) {
-  if (!hasUnsavedChanges) return;
-  // Required for Chrome and some modern browsers
-  e.preventDefault();
-  // Some browsers require this string (ignored but must be non-null)
-  e.returnValue = "";
-  // Others will use this message in legacy implementations
-  return "You have unsaved changes. Are you sure you want to leave?";
-});
-
-
-/*==============================================================================
-THESE ARE UI RENDERING FUNCTIONS
-==============================================================================*/
-
-// clears all user data from the html DOM - used at start of render and before saving
-function clearRenderedElements(){
-  $("#milestoneTimeline, #milestoneList, #allocationOptionSections, #unallocated .task-list, #saveDate, #menuAllocationOptions, #logo, #byLine, #pageTitle").html("");
-  $(".count").html("");
-  $("#confirmModalTitle, #taskEditModal .itemName, #taskMilestone, #completedTasks .completed-list").html("");
-  $(".tsk-milestone, #existingCategoriesList, #existingAllocationsList, #taskCategory, .tsk-category, #taskAssigned, .active-filter-summary").empty();
-  
-  document.title = "";
-  milestoneTimelineVis = null;
-}
-
-// this is the main render function
-function render() {
-
-  injectBacklogDivider();
-  markUnsavedChanges();
-
-  const $main = $('main');
-  const scrollTop = $main.scrollTop(); // preserve
-
-  milestoneMap = Object.fromEntries(milestones.map(m => [m.id, m]));
-  categoryMap = Object.fromEntries((categories || []).map(c => [c.code, c]));
-
-  clearRenderedElements();
-  console.log("Re-Rendering.");
-
-  $("#saveButton").prop("disabled", false);
-  $("#saveDate").text(saveDate);
-  $("#pageTitle").text(pageTitle);
-  document.title = pageTitle;
-  $("#logo").html(logo);
-  $('#byLine').text(byLine);
-
-  renderMilestones();
+  renderMilestoneList();
   renderMilestoneTimeline();
-  renderMilestoneDropdowns();
-  renderCategoryDropdowns(); 
-  renderAllocationOptionSections();
-  renderUnallocatedTasks();  
-  updateTaskAllocationsTotalCount();
-  if (!renderReadOnly){
-    enableDragging();
-    makeTaskTitlesAndDatesEditable();
-  }
+  renderResources();
+  addRemoveDropzones();
   renderCompletedTasks();
-  updateCategoryList();
-  updateAllocationList();
-  updateFiltersButtonState();
-  $('.active-filter-summary').text(getActiveFilterString());
+  renderDropdowns();
+  if (!readOnlyMode){
+    enableDragging();
+  }
+  renderActiveFilterStringAndButtonState();
+  if (readOnlyMode){
+    $(".edit-task, .edit-milestone").parent().hide(); // hides the modifying milestone and task icons
+    $("#configurations-menu").closest("div").hide(); // hides the config menu
+    $("#button-save").closest(".button-group").hide(); // hides the save controls
+    $(".add-task, .add-milestone, #old-task-deletion-group").hide(); // hides add and delete-complete buttons
+  }
 
-  $main.scrollTop(scrollTop); // restore
 
-  if (renderReadOnly){
+  // Restore scroll position
+  window.scrollTo({ top:scrollPos, left:0, behavior: "instant"})
 
-    $("#saveButton, #exportButton").hide();
-    $("#manageAllocations, #manageCategories").hide();    
-    $("#milestones div[role=group] input, #milestones div[role=group] button").prop('disabled', true);
-    $(".delete-milestone").hide();
-    $("#addMilestone, .addTask").parent().hide();    
-    $("p.guidance").hide();
-    $(".backlog-dropzone").hide();
-    $("span.delete").parent().hide();
-    $("#read-only-banner").show();
-    
-  } else { /* NOT NEEDED AS SAVE ISN'T HAPPENING IF IN READ ONLY... SAVED WILL ALWAYS BE EDITABLE... */ }
+  setChangesPresent(true);
+  // console.groupEnd()
 
+}
+// This does some initial setup, triggers the render and sets up delegated onclick events for buttons and icons
+$( document ).ready(function() {
+
+  console.log("EVENT: Document Ready");
+
+  themeChanger();
+
+  updatePage(); // first render
+  setChangesPresent(false);
+
+  // INITIALISATION
+  const $root = $('#container');
+  $root.off('.app');
+
+  // Prevent hash in URL
+  $(window).on('hashchange', function(e){ window.history.pushState("", document.title, window.location.pathname); })
+
+  // delegated event handlers - for performance
+  $("main").on('click', 'div.edit-task', function(){
+    taskId = Number($(this).closest('.task').attr("data-itemid"));
+    setupAndShowEditTaskModal(taskId);
+  });
+  $("main").on('click', 'div.edit-milestone', function(){
+    milestoneId = Number($(this).closest('.milestone').attr("data-itemid"));
+    setupAndShowEditMilestoneModal(milestoneId);
+  });
+  $("main").on('click', 'div.toggle-milstone-tentative', function(){
+    if (!readOnlyMode){
+      milestoneId = Number($(this).closest('.milestone').attr("data-itemid"));
+      toggleMilestoneTentative(milestoneId);
+    }
+  });
+  $("main").on('click', 'div.delete-milestone', function(){
+    milestoneId = Number($(this).closest('.milestone').attr("data-itemid"));
+    askMilestoneDeletion(milestoneId);
+  });
+  $("main").on('click', 'div.complete-task', function(){
+    taskId = Number($(this).closest('.task').attr("data-itemid"));
+    toggleTaskCompletion(taskId);
+  });
+  $("main").on('click', 'div.delete-task', function(){
+    taskId = Number($(this).closest('.task').attr("data-itemid"));
+    askTaskDeletion(taskId);
+  });  
+  $("main").on('click', 'button#remove-complete-tasks-button', function(){
+    askDeleteCompleteTasksBefore();    
+  });
+  $("main").on('click', 'button.timeline', function(){
+    resourceId = $(this).attr("data-resource-id");
+    showResourceTimeline(resourceId);
+  });
+  $("main").on('click', 'button.add-task', function(){
+    resourceId = $(this).attr("data-resource-id");
+    setupAndShowAddTaskModal(resourceId);
+  });
+  $("main").on('click', 'button.show-completed-tasks', function(){
+    showCompleted = !showCompleted;    
+    renderCompletedTasks();
+  });
+  $("body").on('click', '#alert-complete-task button.confirm', function(){
+    id = Number($("#alert-complete-task button.confirm").attr("data-task-id"));
+    setTaskComplete(id);
+    $('#alert-complete-task').get(0).close();
+  });
+  $("body").on('click', '#alert-delete-task button.confirm', function(){
+    id = Number($("#alert-delete-task button.confirm").attr("data-task-id"));
+    deleteTask(id);
+    $('#alert-delete-task').get(0).close();
+  });
+  $("body").on('click', '#alert-delete-milestone button.confirm', function(){
+    id = Number($("#alert-delete-milestone button.confirm").attr("data-task-id"));
+    deleteMilestone(id);
+    $('#alert-delete-milestone').get(0).close();
+  });
+  $("body").on('click', '#alert-delete-completed-tasks button.confirm', function(){
+    deleteCompleteTasksBefore();
+    $('#alert-delete-completed-tasks').get(0).close();
+  });
+  $("body").on('click', '#dialog-configure-resources button.stage-resource-deletion', function(){
+    $(this).parents(".editable-resource-entry").toggleClass("opacity-25");
+    $(this).toggleClass("btn-destructive text-red-600");
+  });
+  $("body").on('click', '#dialog-configure-resources button.add-resource-div', function(){
+    tmplt = $('#dialog-configure-resources .editable-resource-entry.hidden');
+    resDiv = tmplt.clone().removeClass("hidden");    
+    resDiv.appendTo($(tmplt).parent())
+  });  
+
+   $("body").on('change', 'select.category-color', function(){
+    $(this).css("color", $(this).val());
+  });
+  $("body").on('click', '#dialog-configure-categories button.stage-category-deletion', function(){
+    $(this).parents(".editable-category-entry").toggleClass("opacity-25");
+    $(this).toggleClass("btn-destructive text-red-600");
+  });
+  $("body").on('click', '#dialog-configure-categories button.add-category-div', function(){
+    tmplt = $('#dialog-configure-categories .editable-category-entry.hidden');
+    catDiv = tmplt.clone().removeClass("hidden");    
+    catDiv.appendTo($(tmplt).parent())
+  });
+
+  $("body").on('click', 'button#import-json', function(){
+    importUserData()
+      .then(data => {console.log("Loaded:", data);})
+      .catch(err => console.error(err));    
+  });
+  $("body").on('click', 'button#export-json', function(){
+    exportUserData();
+  });
+ 
+
+})
+
+// ELEMENT CREATION FUNCTIONS --------------------------
+
+// this creates a milestone list item and returns it - called by renderMilestoneList()
+function createMilestoneElement(ms){
+
+  template = document.getElementById('template-milestone');
+  clone = template.content.cloneNode(true);
+  let msDiv = $(clone).find('.milestone');
+  msDiv.attr({"data-itemid": ms.id});
+  msDiv.find(".milestoneName").text(ms.name);
+
+  if (ms.date) { // driven by date
+    msDiv.find(".date").text(ms.date);
+    if (isPastDate(ms.date)) msDiv.find(".date").addClass("text-red-500");
+    else if (isSoon(ms.date)) msDiv.find(".date").addClass("text-yellow-500");
+
+    if (ms.tentative) { msDiv.find("svg.tentative").removeClass("opacity-10").addClass("opacity-50") }
+    else { msDiv.find("svg.tentative").removeClass("opacity-50").addClass("opacity-10") }
+
+  }
+  else {  // perpetual
+    msDiv.find(".date").addClass("opacity-70").text("PERPETUAL");
+  }
+
+  if (ms.link) {
+    msDiv.find("svg.link")
+      .removeClass("text-sky-500/10 cursor-not-allowed").addClass("text-sky-500/70 hover:text-sky-500 cursor-pointer")
+      .wrap(`<a href='${ms.link}' target='_blank'></a>`); }
+  else { msDiv.find("svg.link").addClass("text-sky-500/20").removeClass("text-sky-500/70 hover:text-sky-500 cursor-pointer").parent().removeAttr("data-tooltip") }
+
+  return msDiv
+
+}
+// this creates a task list item and returns it - called by renderResources() and renderCompletedTasks()
+function createTaskElement(t){
+  template = document.getElementById('template-task');
+  clone = template.content.cloneNode(true);
+  let taskDiv = $(clone).find('.task');
+  taskDiv.attr({"data-itemid": t.id});
+  taskDiv.find(".taskName").text(t.text);
+  taskDiv.find(".category").css({"color": colorFromCategoryCode(t.category)}).text(t.category||"---").attr("data-tooltip", nameFromCategoryCode(t.category));
+
+  if (t.milestoneId) { // driven by milestone
+    const ms = milestoneFromId(t.milestoneId);
+    if (ms) {
+      taskDiv.find(".task-milestone .name").text(ms.name);
+      if (ms.date) { taskDiv.find(".task-milestone .date").text(ms.date); }
+      else { taskDiv.find(".task-milestone .date").addClass("opacity-70").text("PERPETUAL");}
+      if (ms.tentative){ taskDiv.find(".task-milestone .tentative").removeClass("opacity-0"); }
+      if (ms.date) {
+        if (isPastDate(ms.date)) taskDiv.find(".task-milestone .date").addClass("text-red-500");
+        else if (isSoon(ms.date)) taskDiv.find(".task-milestone .date").addClass("text-yellow-500");
+      }
+    }
+  } else if (t.date) { // driven by date
+    taskDiv.find(".task-milestone .name").addClass("hidden");
+    taskDiv.find(".task-milestone .date").text(t.date);
+    if (isPastDate(t.date)) taskDiv.find(".task-milestone .date").addClass("text-red-500");
+    else if (isSoon(t.date)) taskDiv.find(".task-milestone .date").addClass("text-yellow-500");
+  }
+  else {  // perpetual
+    taskDiv.find(".task-milestone .name").addClass("hidden");
+    taskDiv.find(".task-milestone .date").addClass("opacity-70").text("PERPETUAL");
+  }
+
+  taskDiv.find(".allocation .assignee").text(t.assignedTo || "Unallocated");
+  if (t.completed){
+    taskDiv.find(".allocation").removeClass("hidden");
+    taskDiv.find(".complete-task").attr("data-tooltip", "Mark task NOT complete");
+    taskDiv.find(".complete-task svg").removeClass("text-green-600/20").addClass("text-green-600/80");
+
+    if (t.completed != true){
+      taskDiv.find(".completed-date").removeClass("hidden");
+      taskDiv.find(".completed-date span").text(t.completed);
+    }
+  }
+
+  if (t.linkConf) {
+    taskDiv.find("svg.confluence")
+      .removeClass("text-sky-500/10 cursor-not-allowed").addClass("text-sky-500/70 hover:text-sky-500 cursor-pointer")
+      .wrap(`<a href='${t.linkConf}' target='_blank'></a>`); }
+  else { taskDiv.find("svg.confluence").addClass("text-sky-500/20").removeClass("text-sky-500/70 hover:text-sky-500 cursor-pointer").parent().removeAttr("data-tooltip") }
+
+  if (t.linkJira) {
+    taskDiv.find("svg.jira")
+      .removeClass("text-sky-500/10 cursor-not-allowed").addClass("text-sky-500/70 hover:text-sky-500 cursor-pointer")
+      .wrap(`<a href='${t.linkConf}' target='_blank'></a>`); }
+  else { taskDiv.find("svg.jira").addClass("text-sky-500/20").removeClass("text-sky-500/70 hover:text-sky-500 cursor-pointer").parent().removeAttr("data-tooltip") }
+
+  if (t.linkOther) {
+    taskDiv.find("svg.link")
+      .removeClass("text-sky-500/10 cursor-not-allowed").addClass("text-sky-500/70 hover:text-sky-500 cursor-pointer")
+      .wrap(`<a href='${t.linkConf}' target='_blank'></a>`); }
+  else { taskDiv.find("svg.link").addClass("text-sky-500/20").removeClass("text-sky-500/70 hover:text-sky-500 cursor-pointer").parent().removeAttr("data-tooltip") }
+
+  return taskDiv
 
 }
 
-// this renders the milestones in the milestone list
-function renderMilestones() {
-  const container = document.getElementById("milestoneList");
-  container.innerHTML = ""; // Clear
-  const frag = document.createDocumentFragment();
+// MILESTONES SECTION -------------------------------
 
-  milestones
-    .slice()
+// this renders the milestone list into the DOM
+function renderMilestoneList(){
+
+  $("#ms-title .count").text(USERDATA.milestones.length);
+
+  milestoneArr = [];
+  USERDATA.milestones
     .sort((a, b) => {
       if (!a.date && !b.date) return 0;
       if (!a.date) return 1;      // undated milestones last
       if (!b.date) return -1;
       return new Date(a.date) - new Date(b.date);
     })
-    .forEach(ms => {
-      const group = document.createElement("div");
-      group.setAttribute("role", "group");
+    .forEach(ms => { milestoneArr.push(createMilestoneElement(ms)); })
+  $("section#milestones #milestone-list").append(milestoneArr);
 
-      const nameInput = document.createElement("input");
-      nameInput.type = "text";
-      nameInput.value = ms.name;
-      nameInput.className = "ms-name";
-      nameInput.dataset.milestoneid = ms.id;
-      group.appendChild(nameInput);
-
-      // Compute linked usage and completion
-      const linked = tasks.filter(t => t.milestoneId === ms.id);
-      const used = linked.length > 0;
-      const allComplete = used && linked.every(t => t.completed === true);
-
-      // Show delete if:
-      //  A) milestone is unused (as today), OR
-      //  B) all linked tasks are completed (new behavior)
-      if (!used || allComplete) {
-        const btn = document.createElement("button");
-        btn.textContent = "×";
-        btn.className = "danger delete-milestone";
-        btn.title = !used
-          ? "Delete milestone"
-          : "Delete milestone (all linked tasks are complete: set their due date to the milestone date, de-link, then delete)";
-        btn.dataset.milestoneid = ms.id;
-        btn.dataset.mode = (!used ? "unused" : "all-complete"); // we’ll branch on this later
-        group.appendChild(btn);
-      }
-
-      const dateInput = document.createElement("input");
-      dateInput.type = "date";
-      dateInput.value = ms.date;
-      dateInput.className = "ms-date";
-      dateInput.dataset.milestoneid = ms.id;
-      if (ms.date) {
-        if (isPastDate(ms.date)) dateInput.classList.add("late");
-        else if (isSoon(ms.date)) dateInput.classList.add("soon");
-      }
-      group.appendChild(dateInput);   
-      
-      const tentativeBtn = document.createElement("button");
-      tentativeBtn.textContent = "Tentative";
-      tentativeBtn.className = ms.tentative ? "tentative-btn active" : "tentative-btn";
-      tentativeBtn.dataset.milestoneid = ms.id;
-      tentativeBtn.type = "button";
-      tentativeBtn.className = ms.tentative ? 'tentative-btn active' : 'tentative-btn';
-      tentativeBtn.dataset.milestoneid = ms.id;
-
-      group.appendChild(tentativeBtn);
-
-      frag.appendChild(group);
-    });
-
-  $("#ms-count").html(`(${milestones.length})`)
-
-  container.appendChild(frag);
 }
-
-// this renders the graphical milestone timeline
+// this derives the data and calls renderTimeline() to render milestone timeline into the DOM
 function renderMilestoneTimeline() {
   const host = document.getElementById("milestoneTimeline");
   if (!host) return;
 
   // Only dated milestones make sense on a time scale
-  const dated = milestones
+  const dated = USERDATA.milestones
     .filter(m => m && m.date)               // date is "YYYY-MM-DD" or ""
     .slice()
     .sort((a, b) => new Date(a.date) - new Date(b.date));
@@ -545,17 +664,15 @@ function renderMilestoneTimeline() {
   const data = dated.map(m => ({
     date: m.date,                 // keep original string
     title: m.name,                // keep label
-    // optional: add a URL so clicking a label can do something
-    // url: `#milestones`
-    // optional: style tentative milestones differently (library supports bulletStyle via mapping)
     bulletStyle: m.tentative ? {
-      "border-color": "var(--pico-muted-color)",
-      "opacity": "0.7"
+      "border-color": "var(--foreground);",
+      "opacity": "0.5"
     } : undefined,
     textStyle: m.tentative ? {
-      "color": "var(--pico-muted-color)",
-      "border-color": "var(--pico-muted-color)",
-      "opacity": "0.7"
+      "color": "var(--foreground);",
+      "border-color": "var(--foreground);",
+      "opacity": "0.5",
+      "font-style": "italic"
     } : undefined
   }));
 
@@ -576,1557 +693,849 @@ function renderMilestoneTimeline() {
   // keep timeline ordered
   data.sort((a, b) => new Date(a.date) - new Date(b.date));
 
-  // Create the visualization once; then just .render(data) on subsequent renders
-  if (!milestoneTimelineVis) {
-    milestoneTimelineVis = window.milestonesViz("#milestoneTimeline")
-      .mapping({
-        timestamp: "date",
-        text: "title"
-      })
-      .parseTime("%Y-%m-%d")
-      .aggregateBy('day')
-      .labelFormat("%b %d")  
-      .optimize(true)
-      .render(data)
-      .renderCallback(function () {
-      $(".milestones-text-label").filter(function () {
-        return $.trim($(this).text()) === "Today";
-      }).parent().parent().parent().parent().addClass("milestone-vis-today");
-    });    
-  }
-}
-
-// renders the UI select dropdown in the add-task inputs with the current milestone list (needs reconciling with the edit task model version)
-function renderMilestoneDropdowns() {
-  const selects = document.querySelectorAll(".tsk-milestone");
-  selects.forEach(select => {
-    const currentValue = select.value;
-
-    select.innerHTML = `<option value="">-- Select milestone (optional) --</option>`;
-
-    milestones
-      .slice()
-      .sort(sortMilestonesDatedFirst)
-      .forEach(ms => {
-        const opt = document.createElement("option");
-        opt.value = ms.id;
-
-        // Dated: "Name 2026-01-21"
-        // Undated: "Name" (no parentheses anywhere)
-        opt.textContent = ms.date ? `${ms.name} (${ms.date})` : `${ms.name}`;
-
-        if (String(opt.value) === String(currentValue)) opt.selected = true;
-        select.appendChild(opt);
-      });
-  });
-}
-
-// renders the UI select dropdowns in the add-task inputs  with the current categories list
-function renderCategoryDropdowns() {
-  // Add/Task rows
-  document.querySelectorAll("select.tsk-category").forEach(select => {
-    const current = select.value;
-    select.innerHTML = `<option value="">Category (optional)</option>`;
-    (categories || []).forEach(c => {
-      const opt = document.createElement("option");
-      opt.value = c.code;
-      opt.textContent = `${c.name} (${c.code})`;
-      if (current && current === c.code) opt.selected = true;
-      select.appendChild(opt);
-    });
+  console.log("TIMELINE: Rendering Milestone timeline.")
+  renderTimeline("section#milestones #milestoneTimeline", data, function () {
+    $(".milestones-text-label").filter(function () {
+      return $.trim($(this).text()) === "Today";
+    }).parent().parent().parent().parent().addClass("milestone-vis-today");
   });
 
-  // Edit modal
-  const modalSelect = document.getElementById("taskCategory");
-  if (modalSelect) {
-    const existing = modalSelect.value;
-    modalSelect.innerHTML = `<option value=""></option>`;
-    (categories || []).forEach(c => {
-      const opt = document.createElement("option");
-      opt.value = c.code;
-      opt.textContent = `${c.name} (${c.code})`;
-      modalSelect.appendChild(opt);
-    });
-    if (existing) modalSelect.value = existing;
-  }
 }
 
-// renders the allocation options sections (and in turn renders the tasks)
-function renderAllocationOptionSections() {
-  const section = document.getElementById("allocationOptionSections");
-  const menu = document.getElementById("menuAllocationOptions");
-  section.innerHTML = "";
-  menu.innerHTML = "";
+// ALLOCATIONS / RESOURCES SECTION -------------------------------
 
-  const frag = document.createDocumentFragment();
-  const menuFrag = document.createDocumentFragment();
+// this is a helper to add and remove dropzones for empty/non-empty task lists
+function addRemoveDropzones(){
+  $(".task-list").each(function(){
+    $(this).find('.task-dropzone').remove();
+    if (!$(this).children().length) {
+      template = document.getElementById('template-task-dropzone');
+      clone = template.content.cloneNode(true);
+      $(clone).find('.task-dropzone').appendTo(this);
+    }
+  });
+}
+// this rendors the resource sections into the DOM
+function renderResources(){
 
-  allocationOptions.forEach(option => {
-    const optionName = option.name;
-    const optionType = option.type;
+  let resourceArr = []
+  $("#alloc-title .count").text(USERDATA.tasks.filter(t => !t.completed).filter(matchesActiveFilters).length);
 
-    const optiondiv = document.createElement("div");    
-    //optiondiv.id = option.toLowerCase().replaceAll(" ","-").replaceAll("(","").replaceAll(")","").replaceAll(":","");
-    optiondiv.id = createHtmlIdFromString(optionName);
-    optiondiv.className = "option";
-    // optiondiv.dataset.option = option;
-    optiondiv.dataset.option = optionName;
-    optiondiv.style = "margin-top: 1.5rem;"
+  [...USERDATA.resources, {"name":"Unallocated","type":""}].forEach(resource => {
 
-    const h3 = document.createElement("h3");
-    h3.style = "display: inline-block;";
-    // h3.textContent = option;
-    h3.textContent = optionName;
-    optiondiv.appendChild(h3);
-
-    if (optionType) {
-      const typeSmall = document.createElement("small");
-      typeSmall.style = "margin-left: .5rem; opacity: .7;";
-      typeSmall.textContent = optionType;
-      optiondiv.appendChild(typeSmall);
+    if (resource.name == "Unallocated"){
+      assignedTasks = USERDATA.tasks
+      .filter(t => !t.completed)
+      .filter(t => (t.assignedTo === null))
+    }else{
+      assignedTasks = USERDATA.tasks
+      .filter(t => !t.completed)
+      .filter(t => (t.assignedTo === resource.name))
     }
 
-    const small = document.createElement("small");
-    small.style = "margin-left: .5rem; opacity: .7;";
-    // small.textContent = `(${tasks.filter(t => (t.assignedTo === option)).filter(matchesActiveFilters).filter(t => (t.id !== BACKLOG_MARKER_ID)).filter(t => !t.completed).length})`;
-    small.textContent = `(${tasks.filter(t => (t.assignedTo === optionName)).filter(matchesActiveFilters).filter(t => (t.id !== BACKLOG_MARKER_ID)).filter(t => !t.completed).length})`;
-    optiondiv.appendChild(small);
-
-    const taskList = document.createElement("div");
-    taskList.className = "task-list";
-
-    const assignedTasks = tasks
-      //.filter(t => (t.assignedTo === option || t.id === BACKLOG_MARKER_ID))
-      .filter(t => (t.assignedTo === optionName || t.id === BACKLOG_MARKER_ID))
+    assignedTasks = assignedTasks
       .filter(matchesActiveFilters)
-      .filter(t => !t.completed)
       .sort((a, b) => (a.priority ?? 9999) - (b.priority ?? 9999));
 
-    for (const task of assignedTasks) {
-      taskList.appendChild(createTaskElement(task)[0]); // jQuery → DOM
+    template = document.getElementById('template-resource');
+    clone = template.content.cloneNode(true);
+    let resourceDiv = $(clone).find('.resource');
+    //resourceDiv.appendTo("#allocations-list");
+    resourceDiv.attr({id: createHtmlIdFromString(resource.name)});
+    resourceDiv.find(".about h2").text(resource.name)
+    if (resource.name == "Unallocated"){resourceDiv.find(".about h2").addClass("italic");}
+
+    resourceDiv.find(".about div small.type").text(resource.type);
+    resourceDiv.find(".about .count").text(assignedTasks.length);
+    resourceDiv.find(".task-list").attr("data-resource", resource.name);
+
+    menuEntryLi = $(`<li><a href="#${createHtmlIdFromString(resource.name)}" aria-current="page"><span>${resource.name}</span></a></li>`).appendTo('#menu-allocations-list')
+    if (resource.name == "Unallocated"){menuEntryLi.find("span").addClass("italic pe-1");} // pe-1 needed to render the top of the end d when italicised!
+
+    activeAssignedTasks = assignedTasks
+      .filter(t => (t.active));
+    backlogAssignedTasks = assignedTasks
+      .filter(t => (!t.active));
+
+
+    if (resource.name == "Unallocated"){
+      taskListDivBacklog = resourceDiv.find(".task-list.tasks-backlog");
+      activeAssignedTasks.forEach(t => { createTaskElement(t).appendTo(taskListDivBacklog); })
+      backlogAssignedTasks.forEach(t => { createTaskElement(t).appendTo(taskListDivBacklog);})
+      resourceDiv.find(".task-list.tasks-active").css("display", "none");
+      resourceDiv.find(".task.backlog-divider").css("display", "none");
+    }else{
+      taskListDivActive = resourceDiv.find(".task-list.tasks-active");
+      taskListDivBacklog = resourceDiv.find(".task-list.tasks-backlog");
+      activeAssignedTasks.forEach(t => { createTaskElement(t).appendTo(taskListDivActive); })
+      backlogAssignedTasks.forEach(t => { createTaskElement(t).appendTo(taskListDivBacklog);})
     }
-    ensureBacklogDropzones(taskList);
 
-    optiondiv.appendChild(taskList);
+    // renderTasksTimeline(createHtmlIdFromString(resource.name), assignedTasks)
+    resourceDiv.find("button.timeline").attr("data-resource-id", resource.name);
+    resourceDiv.find("button.add-task").attr("data-resource-id", resource.name);
 
-    const $group = $("#addTaskInputs").clone(true, true);
-    $group.attr("id", ""); // avoid duplicate IDs
-    // $group.find("button").addClass("addTask").attr("data-allocation", option);
-    $group.find("button").addClass("addTask").attr("data-allocation", optionName);     
-    $(optiondiv).append($group[0]);
+    resourceArr.push(resourceDiv);
 
-    frag.appendChild(optiondiv);
-    
-    const li = document.createElement("li");
-    const a = document.createElement("a");
-    // a.href = `#${option.toLowerCase().replaceAll(" ","-").replaceAll("(","").replaceAll(")","").replaceAll(":","")}`;
-    // a.textContent = option;
-    a.href = `#${createHtmlIdFromString(optionName)}`;
-    a.textContent = optionName;
-    li.appendChild(a);
-    menuFrag.appendChild(li);
-  });
+  })
 
-  const unallocatedLi = document.createElement("li");
-  const a = document.createElement("a");
-  a.href = "#unallocated";
-  a.textContent = "Unallocated";
-  unallocatedLi.appendChild(a);
-  menuFrag.appendChild(unallocatedLi);
-
-  section.appendChild(frag);
-  menu.appendChild(menuFrag);
-  
+  $("section#allocations #allocations-list").append(resourceArr)
 }
 
-// renders the unallocated task section (and in turn renders the tasks)
-function renderUnallocatedTasks() {
-  const container = document.querySelector("#unallocated .task-list");
-  container.innerHTML = ""; // Clear previous content
-  const frag = document.createDocumentFragment();
+// COMPLETED TASKS SECTION -------------------------------
 
-  tasks
-    // .filter(t => (t.assignedTo === null || !allocationOptions.includes(t.assignedTo) || t.id === BACKLOG_MARKER_ID))
-    .filter(t => (t.assignedTo === null || !allocationNameExists(t.assignedTo) || t.id === BACKLOG_MARKER_ID))
+// this updates the count and if "showCompleted" is true, renders the completed task list
+function renderCompletedTasks(){
+
+  completedDiv = $("section#completed")
+
+  completedTasks = USERDATA.tasks
     .filter(matchesActiveFilters)
-    .filter(t => !t.completed)
-    .sort((a, b) => (a.priority ?? 9999) - (b.priority ?? 9999))
-    .forEach(task => {
-      frag.appendChild(createTaskElement(task)[0]); // jQuery → native DOM node
-    });
+    .filter(t => t.completed);
 
-  container.appendChild(frag);
-  ensureBacklogDropzones(container);
+  completedDiv.find(".count").text(completedTasks.length);
+  if (showCompleted) { 
+      $('button.show-completed-tasks').text("Hide Completed Task List"); 
+      $("#old-task-deletion-group").removeClass("hidden"); 
+    } else { 
+      $('button.show-completed-tasks').text("Show Completed Task List");
+      $("#old-task-deletion-group").addClass("hidden");
+    }
+  completedTaskListDiv = completedDiv.find("#completed-task-list");
+  completedTaskListDiv.html("");
 
-  //$("#tasks-allocations-unallocated-count").html(`(${tasks.filter(t => (!allocationOptions.includes(t.assignedTo) || t.assignedTo === null)).filter(matchesActiveFilters).filter(t => (t.id != BACKLOG_MARKER_ID)).filter(t => !t.completed).length})`)
-  $("#tasks-allocations-unallocated-count").html(`(${tasks.filter(t => (!allocationNameExists(t.assignedTo) || t.assignedTo === null)).filter(matchesActiveFilters).filter(t => (t.id != BACKLOG_MARKER_ID)).filter(t => !t.completed).length})`)
-  
-}
-
-// renders the completed tasks section (and in turn renders the tasks)
-function renderCompletedTasks() {
-  const container = document.querySelector("#completedTasks .completed-list");
-  container.innerHTML = "";
-  const frag = document.createDocumentFragment();
-
-  tasks
-    .filter(t => t.completed)
-    .filter(matchesActiveFilters)
-    .sort((a, b) => (a.priority ?? 9999) - (b.priority ?? 9999)) // sort if needed
-    .forEach(task => {
-      const $el = createTaskElement(task)[0];
-      $el.classList.add("completed-task");
-      frag.appendChild($el);
-    });
-
-  container.appendChild(frag);
-
-  
-  $("#tasks-complete-count").html(`(${tasks.filter(t => t.completed).filter(matchesActiveFilters).length})`)
-}
-
-// renders a task element
-function createTaskElement(task) {
-
-  if (task.isBacklogDivider) {
-    
-    const $task = $("<div>").addClass("task backlog-divider").attr("data-itemid", task.id).attr("draggable", "false");
-    const $content = $("<div class='backlog_divider'>Backlog Divider</div>");
-    $task.append($content);
-    // const $content = $("<div>").addClass("flex justify-center align-center").css({ fontStyle: "italic", opacity: 0.8 });
-    // $content.text(task.text);
-    // $task.append($content);
-    return $task;
+  if (showCompleted) {
+    completedTaskArr = []
+    completedTasks.sort((a, b) => {
+      let aCompleted = a.completed;
+      let bCompleted = b.completed;
+      if (aCompleted && bCompleted) {
+        if (aCompleted !== bCompleted) {
+          return aCompleted.localeCompare(bCompleted);
+        }
+      }
+      return 0;
+    }).forEach(t => { completedTaskArr.push(createTaskElement(t)) })
+    completedTaskListDiv.append(completedTaskArr);
   }
 
-  const $task = $("<div>").addClass("task").attr("data-itemid", task.id);
-  const $grid = $("<div>").addClass("flex gap-3 items-baseline").appendTo($task);
-  const $catDiv = $("<div>").addClass("flex-shrink").appendTo($grid);
-  const $task_title = $("<div>").addClass("taskName").text(task.text).appendTo($grid);
-  $("<small>").addClass("assignee").text(` (${task.assignedTo||"Unallocated"})`).appendTo($grid);
+}
 
-  const $rightOuter = $("<div>").addClass("flex-grow").appendTo($grid);
-  const $right = $("<div>").addClass("flex gap-3 justify-end").appendTo($rightOuter);
-  
-  const $due = $("<div>").addClass("due").css({"display": "inline-block"}).appendTo($right);
-  const $links = $("<div>").css({"display": "inline-block"}).appendTo($right);
-  const $functions = $("<div>").addClass("no-print").css({"display": "inline-block"}).appendTo($right);
-  let dueDate = null;
-  let dueText = '';
-  if (!task.due && task.milestoneId) {
-    const ms = getMilestoneById(task.milestoneId);
-    if (ms) {
-      dueDate = ms.date;
-      dueText = `<small class="${ms.tentative ? 'tentative' : ''}">${ms.name}</small> ${ms.date}`;
-    }
-    $due.addClass("milestoneDriven")
-  } else if (task.due) {
-    dueDate = task.due;
-    dueText = `${task.due}`;
+// BUTTONS, DRAGGING -------------------------------
+
+// called from the show timeline click event
+function renderTasksTimeline(name) {
+
+  host = $('#dialog-task-timeline .timeline-holder').get(0); // raw js dom element
+  if (!host) return;
+
+  if (name == "Unallocated"){
+    taskData = structuredClone(USERDATA.tasks)
+    .filter(t => !t.completed)
+    .filter(t => (t.assignedTo === null))
+  }else{
+    taskData = structuredClone(USERDATA.tasks)
+    .filter(t => !t.completed)
+    .filter(t => (t.assignedTo === name))
+  }
+  taskData = taskData
+    .filter(matchesActiveFilters)
+    .sort((a, b) => (a.priority ?? 9999) - (b.priority ?? 9999));
+
+  taskData.forEach(task => {
+    task.derivedDate = null;
     if (task.milestoneId) {
-      const ms = getMilestoneById(task.milestoneId);
-      if (ms) dueText = `${ms.name} | ` + dueText ;
-    }
-    $due.addClass("dateDriven")
-  }
-  else {
-      dueText = (`<small style="color: var(--pico-muted-color);" class="perpetual"><em>&nbsp;</em></small>`);
-  }
-  $due.html(`${dueText}`);
-
-  if (!task.completed){
-    if (dueDate && isPastDate(dueDate)) { $task.addClass("late"); } 
-    else if (dueDate && isSoon(dueDate)){ $task.addClass("soon"); }
-  }
-  
-  if (task.category) {
-    const cat = categoryMap[task.category] || { color: "inherit", name: task.category, code: task.category };
-    $("<span>")
-      .addClass("category")
-      .attr("title", cat.name || task.category)
-      .css("color", cat.color || "inherit")
-      .text(cat.code || task.category)
-      .appendTo($catDiv);
-  }
-
-  let svgConf = $(`<svg xmlns="http://www.w3.org/2000/svg" x="0px" y="0px" viewBox="0 0 50 50"><path d="M 36.988281 2.9902344 C 36.519863 3.0093652 36.069688 3.2528906 35.804688 3.6816406 C 35.800688 3.6886406 35.795016 3.6941719 35.791016 3.7011719 C 35.411016 4.3361719 34.921672 5.1619219 34.388672 6.0449219 C 30.470672 13.059922 26.844437 11.486422 20.023438 8.2324219 L 10.609375 4.1308594 C 9.881375 3.7848594 9.0091094 4.0933125 8.6621094 4.8203125 C 8.6541094 4.8343125 8.6485781 4.846375 8.6425781 4.859375 L 4.1210938 14.705078 C 3.8020938 15.435078 4.1275625 16.285188 4.8515625 16.617188 C 6.8375625 17.551188 10.789703 19.411953 14.345703 21.126953 C 27.142703 27.335953 38.016938 26.934063 46.335938 13.414062 C 46.810938 12.641063 47.343875 11.742344 47.796875 11.027344 C 48.201875 10.343344 47.985594 9.4609687 47.308594 9.0429688 L 37.814453 3.2050781 C 37.557203 3.0464531 37.269332 2.9787559 36.988281 2.9902344 z M 21.050781 25.003906 C 14.442609 25.143818 8.6034688 28.546719 3.6640625 36.574219 C 3.1890625 37.347219 2.656125 38.245938 2.203125 38.960938 C 1.798125 39.644937 2.0144063 40.527312 2.6914062 40.945312 L 12.185547 46.783203 C 12.871547 47.206203 13.771312 46.994594 14.195312 46.308594 C 14.199312 46.301594 14.204984 46.294109 14.208984 46.287109 C 14.588984 45.652109 15.078328 44.828312 15.611328 43.945312 C 19.529328 36.930312 23.155563 38.501859 29.976562 41.755859 L 39.390625 45.859375 C 40.118625 46.205375 40.990891 45.896922 41.337891 45.169922 L 41.355469 45.130859 L 45.876953 35.285156 C 46.195953 34.555156 45.870484 33.705047 45.146484 33.373047 C 43.160484 32.439047 39.208344 30.578281 35.652344 28.863281 C 30.454375 26.340062 25.572162 24.908177 21.050781 25.003906 z"></path></svg>`)
-  if (!(task['link-conf'] == undefined || task['link-conf'] == "")){ 
-    link = $("<a>").attr("href", task['link-conf']).attr("target", "_blank").attr("title", "Confluence").appendTo($links);
-    svgConf.css({'height': "1em", "color": "var(--pico-primary)", 'margin': "0 0.25rem", "cursor": "pointer"}).appendTo(link);
-  }
-  else { svgConf.css({'height': "1em", "color": "var(--pico-primary)", 'margin': "0 0.25rem", "opacity": "0.2"}).appendTo($links); }
-  
-  let svgJira = $(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M11.53,2a4.37,4.37,0,0,0,4.35,4.35h1.78v1.7A4.35,4.35,0,0,0,22,12.4V2.84A.85.85,0,0,0,21.16,2H11.53M6.77,6.8a4.36,4.36,0,0,0,4.34,4.34h1.8v1.72a4.36,4.36,0,0,0,4.34,4.34V7.63a.84.84,0,0,0-.83-.83H6.77M2,11.6a4.34,4.34,0,0,0,4.35,4.34H8.13v1.72A4.36,4.36,0,0,0,12.47,22V12.43a.85.85,0,0,0-.84-.84H2Z"/></svg>`)
-  if (!(task['link-jira'] == undefined || task['link-jira'] == "")){ 
-    link = $("<a>").attr("href", task['link-jira']).attr("target", "_blank").attr("title", "Jira").appendTo($links);
-    svgJira.css({'height': "1em", "color": "var(--pico-primary)", 'margin': "0 0.25rem", "cursor": "pointer"}).appendTo(link);
-  }
-  else { svgJira.css({'height': "1em", "color": "var(--pico-primary)", 'margin': "0 0.25rem", "opacity": "0.2"}).appendTo($links); }
-
-  let svgOther = $(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" version="1.1">
-    <g stroke="none" stroke-width="1" fill="none" fill-rule="evenodd"><g>
-    <rect id="Rectangle" fill-rule="nonzero" x="0" y="0" width="24" height="24"></rect>
-    <path d="M14,16 L17,16 C19.2091,16 21,14.2091 21,12 L21,12 C21,9.79086 19.2091,8 17,8 L14,8" id="Path" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
-    <path d="M10,16 L7,16 C4.79086,16 3,14.2091 3,12 L3,12 C3,9.79086 4.79086,8 7,8 L10,8" id="Path" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
-    <line x1="7.5" y1="12" x2="16.5" y2="12" id="Path" stroke="currentColor" stroke-width="2" stroke-linecap="round"></line>
-    </g></g>
-</svg>`);
-  if (!(task['link-other'] == undefined || task['link-other'] == "")) {
-    let link = $("<a>").attr("href", task['link-other']).attr("target", "_blank").attr("title", "Other Link").appendTo($links);
-    svgOther.css({'height': "1em", "color": "var(--pico-primary)", 'margin': "0 0.25rem", "cursor": "pointer"}).appendTo(link);
-  } else {
-    svgOther.css({'height': "1em", "color": "var(--pico-primary)", 'margin': "0 0.25rem", "opacity": "0.2"}).appendTo($links);
-  }
-
-  let svgEdit = $(`<svg xmlns="http://www.w3.org/2000/svg" x="0px" y="0px" viewBox="0 0 30 30"><path d="M 22.828125 3 C 22.316375 3 21.804562 3.1954375 21.414062 3.5859375 L 19 6 L 24 11 L 26.414062 8.5859375 C 27.195062 7.8049375 27.195062 6.5388125 26.414062 5.7578125 L 24.242188 3.5859375 C 23.851688 3.1954375 23.339875 3 22.828125 3 z M 17 8 L 5.2597656 19.740234 C 5.2597656 19.740234 6.1775313 19.658 6.5195312 20 C 6.8615312 20.342 6.58 22.58 7 23 C 7.42 23.42 9.6438906 23.124359 9.9628906 23.443359 C 10.281891 23.762359 10.259766 24.740234 10.259766 24.740234 L 22 13 L 17 8 z M 4 23 L 3.0566406 25.671875 A 1 1 0 0 0 3 26 A 1 1 0 0 0 4 27 A 1 1 0 0 0 4.328125 26.943359 A 1 1 0 0 0 4.3378906 26.939453 L 4.3632812 26.931641 A 1 1 0 0 0 4.3691406 26.927734 L 7 26 L 5.5 24.5 L 4 23 z"></path></svg>  `)
-  svgEdit.css({'height': "1em", "color": "var(--pico-secondary)", 'margin': "0 0.25rem", "cursor": "pointer"}).addClass('open-task-edit-modal').appendTo($functions);
-  
-  if (!task.isBacklogDivider) {
-    const svgComplete = $(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path stroke="currentColor" d="M20.3 5.7c.4.4.4 1 0 1.4L10 17.4 4.7 12.1a1 1 0 1 1 1.4-1.4L10 14.6l9.3-9.3c.4-.4 1-.4 1.4 0z"/></svg>`);
-    svgComplete
-      .css({ height: "1em", margin: "0 0.25rem" })
-      .addClass("complete")
-      .data("taskid", task.id)
-      .appendTo($functions);
-  }
-
-  // Add delete button
-  $("<span>").text("×").addClass("delete").attr("title", "Delete task").appendTo($functions);
-
-  return $task;
-}
-
-// updates the state of filter modal button
-function updateFiltersButtonState() {
-  const hasActive = activeFilters.categories.size > 0 || 
-                  activeFilters.milestones.size > 0 || 
-                  (activeFilters.searchText.trim() !== "");
-  $('#openFilters').toggleClass('active', hasActive);
-}
-
-// updates the total "not done" task count for the whole Task Allocations section
-// - respects active filters
-function updateTaskAllocationsTotalCount() {
-  const total = tasks
-    .filter(matchesActiveFilters)
-    .filter(t => t.id !== BACKLOG_MARKER_ID)
-    .filter(t => !t.completed)
-    .length;
-  $("#tasks-count").html(`(${total})`);
-}
-
-// renders task dropzones for empty sides of the backlog divider within an input element
-function ensureBacklogDropzones(containerEl) {
-  // remove any old dropzones to avoid duplicates
-  containerEl.querySelectorAll('.backlog-dropzone').forEach(el => el.remove());
-
-  const dividerEl = containerEl.querySelector('.backlog-divider');
-  if (!dividerEl) return;
-
-  // count tasks above/below (exclude divider)
-  const children = Array.from(containerEl.children);
-  const dividerIdx = children.indexOf(dividerEl);
-
-  const isTask = el => el.classList && el.classList.contains('task') && !el.classList.contains('backlog-divider');
-
-  const aboveCount = children.slice(0, dividerIdx).filter(isTask).length;
-  const belowCount = children.slice(dividerIdx + 1).filter(isTask).length;
-
-  const newContent = document.createTextNode('Drop tasks here!');
-  // If empty above, add a dropzone just above the divider
-  if (aboveCount === 0) {
-    const dzAbove = document.createElement('div');
-    dzAbove.className = 'task backlog-dropzone backlog-dropzone--above';
-    dzAbove.appendChild(newContent);
-    // Important: not a .task, so it won’t be draggable or counted as a task
-    containerEl.insertBefore(dzAbove, dividerEl);
-  }
-
-  // If empty below, add a dropzone just below the divider
-  if (belowCount === 0) {
-    const dzBelow = document.createElement('div');
-    dzBelow.className = 'task backlog-dropzone backlog-dropzone--below';
-    dzBelow.appendChild(newContent);
-    containerEl.insertBefore(dzBelow, dividerEl.nextSibling);
-  }
-}
-
-// updates the filters modal display
-function buildFiltersModalUI() {
-  const $body = $('#filtersModalBody');
-  if ($body.length === 0) return;
-
-  // Search text UI (NEW)
-  const searchBoxHtml = `
-    <label style="display:block; margin-bottom: .75rem;">
-      <span>Match text in task or milestone</span>
-      <input type="search" id="f-search" placeholder="e.g. design, MS2..." value="${activeFilters.searchText || ""}">
-    </label>
-  `;
-  $body.html(searchBoxHtml); // start body with search box 
-
-  // Categories
-  const catItems = (categories || []).map(c => {
-    const id = `f-cat-${c.code}`;
-    return `
-      <label style="display:flex; gap:.5rem; align-items:center;">
-        <input type="checkbox" id="${id}" data-filter-type="category" value="${c.code}" ${activeFilters.categories.has(c.code) ? 'checked' : ''}>
-        <span style="color:${c.color || 'inherit'}">${c.name} <small>(${c.code})</small></span>
-      </label>`;
-  }).join('');
-
-  // Milestones
-  const msItems = [
-    `<label style="display:flex; gap:.5rem; align-items:center;">
-       <input type="checkbox" id="f-ms-direct" data-filter-type="milestone" value="${FILTER_DIRECT}" ${activeFilters.milestones.has(FILTER_DIRECT) ? 'checked' : ''}>
-       <span>Direct-driven <small>(has own due date)</small></span>
-     </label>`,
-    ...milestones
-      .slice().sort((a,b)=>new Date(a.date)-new Date(b.date))
-      .map(m => {
-        const id = `f-ms-${m.id}`;
-        const tent = m.tentative ? ' <small class="tentative">(tentative)</small>' : '';
-        const dateSmall = m.date ? ` <small>(${m.date})</small>` : '';
-        return `
-          <label style="display:flex; gap:.5rem; align-items:center;">
-            <input type="checkbox" id="${id}" data-filter-type="milestone" value="${m.id}" ${activeFilters.milestones.has(String(m.id)) ? 'checked' : ''}>
-            <span>${m.name}${dateSmall}${tent}</span>
-          </label>`;
-      })
-  ].join('');
-
-  $body.append(`
-    <div style="display:grid; gap:1rem; margin-top:.25rem;">
-      <fieldset>
-        <legend style="margin-bottom:.25rem;">Category</legend>
-        <div style="display:grid; gap:.25rem;">${catItems || '<small>(no categories)</small>'}</div>
-      </fieldset>
-      <fieldset>
-        <legend style="margin-bottom:.25rem;">Milestone</legend>
-        <div style="display:grid; gap:.25rem;">${msItems || '<small>(no milestones)</small>'}</div>
-      </fieldset>
-      <small class="contrast">Tip: selection is OR within each group, AND across groups.</small>
-    </div>
-  `);
-}
-
-// renders the allocation list shown in the allocation options modal
-function updateAllocationList() {
-  
-  const $list = $('#existingAllocationsList');
-  $list.empty();
-
-  allocationOptions.forEach(opt => {
-    const name = opt.name;
-    const type = opt.type;
-    const inUse = tasks.some(t => t.assignedTo === name);
-
-    const $li = $('<li>').css({
-      display: 'grid',
-      gridTemplateColumns: '1fr 1fr auto auto',
-      gap: '.5rem',
-      alignItems: 'center',
-      padding: '.25rem 0'
-    });
-
-    const $name = $('<input type="text">')
-      .addClass('alloc-edit-name')
-      .val(name);
-
-    const $type = $('<input type="text">')
-      .addClass('alloc-edit-type')
-      .attr('placeholder', 'Type (optional)')
-      .val(type);
-
-    const $save = $('<button type="button">')
-      .addClass('small save-allocation')
-      .text('Save')
-      .attr('data-old', name);
-
-    $li.append($name, $type, $save);
-
-    if (!inUse) {
-      const $del = $('<button type="button">')
-        .addClass('small danger del-allocation')
-        .css({ width: '3rem' })
-        .text('×')
-        .attr('title', 'Remove allocation')
-        .attr('data-option', name);
-      $li.append($del);
-    } else {
-      $li.append($('<small>').css({ opacity: 0.7 }).text('in use'));
-    }
-
-    $list.append($li);
-  });
-
-}
-
-// renders the category list shown in the category options modal
-function updateCategoryList() {
-  const $list = $('#existingCategoriesList');
-  $list.empty();
-
-  (categories || []).forEach(cat => {
-    const inUse = tasks.some(t => t.category === cat.code);
-    const $li = $('<li>').addClass("flex justify-evenly content-center");
-
-    const $code = $('<strong>').text(cat.code).css({ marginRight: '.5rem' });
-    const $name = $('<span>')
-      .text(cat.name)
-      .css({ outline: 'none' });
-
-    // const $color = $('<input type="color">').val(cat.color).css({ "margin": '0 .5rem', "display": "inline-block", "width": "100px" });
-    const colorSelect = document.createElement('select');
-    // copy options from the HTML template
-    colorSelect.innerHTML = document.getElementById('colorOptionsTemplate').innerHTML;
-    $(colorSelect).css({ "width": "250px" })
-    // set current value
-    colorSelect.value = cat.color || "";
-    colorSelect.addEventListener('change', () => {
-      cat.color = colorSelect.value;
-      render();
-    });
-
-    $li.css({"color": cat.color})
-    $li.append($code, $name, colorSelect);
-
-    if (!inUse) {
-      const $del = $('<button>')
-        .text('×')
-        .css({ display: 'inline-block', width: '3rem', marginLeft: '1rem' })
-        .addClass('small danger')
-        .on('click', () => {
-          const idx = categories.findIndex(c => c.code === cat.code);
-          if (idx >= 0) {
-            categories.splice(idx, 1);
-            render();
-          }
-        });
-      $li.append($del);
-    } else {
-      $li.append(' (in use)');
-    }
-
-    $list.append($li);
-  });
-}
-
-/*==============================================================================
-THESE ARE UI ACTION FUNCTIONS
-==============================================================================*/
-
-// deletes a milestone that has all complete referencing tasks
-//   - assigns milestone date to referencing tasks
-//   - removes reference in the referencing tasks
-//   - provides UI feedback toast
-function deleteMilestoneWhenAllComplete(msId) {
-  const ms = getMilestoneById(msId);
-  if (!ms) return;
-
-  // For every task linked to this milestone, set a direct due date and unlink
-  tasks
-    .filter(t => t.milestoneId === msId)
-    .forEach(t => {
-      t.due = ms.date;     // preserve the milestone date on the task
-      t.milestoneId = null;
-    });
-
-  // Now call your existing function to actually remove the milestone
-  // (Assumes deleteMilestone(msId) removes from `milestones` and then re-renders/saves, as it does today)
-  deleteMilestone(msId);
-
-  // Optional: a friendlier toast if your deleteMilestone doesn’t already show one
-  showToast("Milestone deleted and completed tasks relinked to its date.", "success");
-}
-
-// deletes a task from the tasks list (with UI confirmation) and provides UI feedback via toast
-function deleteTask(taskId) {
-  const task = tasks.find(t => t.id === taskId);
-  if (task) {
-    showConfirmModal("Are you sure you want to delete this task?", function () {
-      tasks.splice(tasks.indexOf(task), 1);
-      console.log(`Task '${task.text}' deleted.`)
-      render();
-      $('#confirmModal')[0].close();
-    }, `Task '${task.text}'`);
-  }
-}
-
-// deletes a milestone (with UI confirmation) if no tasks are linked or provides alert if in use
-function deleteMilestone(milestoneId) {
-  const milestone = milestones.find(m => m.id === milestoneId);
-  const inUse = tasks.some(t => t.milestoneId === milestoneId);
-  if (!milestone) return;
-
-  if (inUse) {
-    showAlertModal("Cannot delete milestone: It is assigned to one or more tasks.", `Milestone '${milestone.name}'`);
-  } else {
-    showConfirmModal("Are you sure you want to delete this milestone?", function () {
-      milestones.splice(milestones.indexOf(milestone), 1);      
-      console.log(`Milestone '${milestone.name}' deleted.`)
-      render();
-    }, `Milestone '${milestone.name}'`);
-  }
-}
-
-// this adds the functionanility of editable task titles and dates (if directly assinged) via double click
-// also handles the callbacks on completion of an edit
-function makeTaskTitlesAndDatesEditable() {
-  $('.task .taskName').each(function () {
-    const $el = $(this);
-    if ($el.data('editable')) {
-      $el.editable('destroy');
-    }
-    $el.editable({
-      touch : true, lineBreaks : false, toggleFontSize : false,  closeOnEnter : true, emptyMessage : 'Task Name',
-      callback : function( data ) {
-        if( data.content ) {         
-          id = parseInt(data.$el.parents('.task').attr("data-itemid"))
-          const task = tasks.find(t => t.id === id);
-          task.text = data.content;
-        }            
-        data.$el.removeAttr("data-edit-event");
-        data.$el.removeAttr("style");
-        console.log(`Task name edited to '${data.content}'.`);
-
-        render();
+      const ms = milestoneFromId(task.milestoneId);
+      if (ms) {
+        if (ms.date != "") {
+          task.derivedDate = ms.date;
+        }
       }
-    });
-  });
-
-  $('.task .due.dateDriven').each(function () {
-    const $el = $(this);
-    if ($el.data('editable')) {
-      $el.editable('destroy');
+    } else if (task.date) {
+      task.derivedDate = task.date;
     }
-    $el.editable({
-      touch : true, lineBreaks : false, toggleFontSize : false, closeOnEnter : true,
-      callback : function( data ) {
-        const id = parseInt(data.$el.parents('.task').attr("data-itemid"));
-        const task = tasks.find(t => t.id === id);        
 
-        data.$el.removeAttr("data-edit-event");
-        data.$el.removeAttr("style");    
+    task.color = colorFromCategoryCode(task.category)
+    //if (task.color) {task.color = task.color.color;}
+  })
 
-        if (data.content === "") {
-          task.due = null;
-          console.log(`Task date cleared.`);
-        } else if (isValidDate(data.content)) {
-          task.due = data.content;
-          console.log(`Task date edited to '${data.content}'.`);
-        }    
+  // Only dated tasks make sense on a time scale
+  const dated = taskData
+    .filter(t => t && t.derivedDate != null )
+    .sort((a, b) => new Date(a.derivedDate) - new Date(b.derivedDate));
 
-        render();
-      }
+  // If none, hide the timeline area
+  if (dated.length === 0) {
+    host.innerHTML = "";
+    host.style.display = "none";
+    return;
+  }
+  host.style.display = "";
+
+  // Map your objects to what d3-milestones expects (timestamp + text)
+  const data = dated.map(m => ({
+    date: m.derivedDate,
+    title: m.text,
+    textStyle: m.color ? {
+      "color": m.color
+    } : undefined
+  }));
+
+  // --- Add a synthetic "Today" marker (red) ---
+  const today = todayYMD();
+
+  // Prevent duplicates if you already have a milestone dated today with the same label
+  const hasToday = data.some(d => d.date === today && d.title === "Today");
+
+  if (!hasToday) {
+    data.push({
+      date: today,
+      title: "Today",
+      textStyle: {"color": "red"}
     });
+  }
+
+  // keep timeline ordered
+  data.sort((a, b) => new Date(a.date) - new Date(b.date));
+  
+  console.log(`TIMELINE: Rendering resource '${name}' timeline.`)
+  renderTimeline(`#dialog-task-timeline .timeline-holder`, data, function () {
+    $(".milestones-text-label").filter(function () {
+      return $.trim($(this).text()) === "Today";
+    }).parent().parent().parent().parent().addClass("milestone-vis-today");
   });
 }
-
-// this sets up the draggable tasks, between allocation options and within an allocation option list
+// this sets up the draggable tasks, between resources and within an resource's task list
 function enableDragging() {
-  // Tear down old instances if any
   if (window.sortableInstances) window.sortableInstances.forEach(s => s.destroy());
   window.sortableInstances = [];
-
-  // ALLOCATION LISTS (team buckets + Unallocated): divider is NOT draggable
-  document.querySelectorAll('#allocationOptionSections .task-list, #unallocated .task-list')
-    .forEach(taskList => {
+  $('.task-list').each(function(index, taskList) {
       const sAlloc = new Sortable(taskList, {
-        group: {
-          name: 'alloc',
-          // forbid dragging the divider out of / into allocation lists
-          pull: (to, from, dragEl) => !dragEl.classList.contains('backlog-divider'),
-          put:  (to, from, dragEl) => !dragEl.classList.contains('backlog-divider'),
-        },
+        group: { name: 'alloc' },
         animation: 150,
         direction: 'vertical',
-        swapThreshold: 0.1,
-        invertSwap: true,
-
-        // Divider cannot be picked up in these lists
+        swapThreshold: 0.9,
+        invertSwap: false,
         draggable: '.task',
-        filter: '.backlog-divider, .backlog-dropzone',
-        preventOnFilter: false,
-
-        // IMPORTANT: allow dropping NEXT TO the divider, even if one side is empty
-        onMove(evt) {
-          // Block only if the DRAGGED element is the divider (defensive)
-          if (evt.dragged && evt.dragged.classList.contains('backlog-divider')) return false;
-          // Allow when related is the divider OR the dropzone
-          return true;
-        },
-
+        filter: '.task-dropzone',
+        preventOnFilter: true,
         onEnd(evt) {
-          const toList = evt.to;
-          const fromList = evt.from;
 
-          const toDivOption = toList.closest('div.option');
-          const fromDivOption = fromList.closest('div.option');
+          const toList = $(evt.to);
+          const fromList = $(evt.from);
 
-          const newAssignedTo = toDivOption?.dataset.option || null;
-          const oldAssignedTo = fromDivOption?.dataset.option || null;
+          const toResource = toList.attr("data-resource");
+          const fromResource = fromList.attr("data-resource");
 
           const taskId = Number(evt.item.dataset.itemid);
-          const task = tasks.find(t => t.id === taskId);
+          const task = USERDATA.tasks.find(t => t.id === taskId);
 
           // update assignment (ignore divider)
-          if (task && task.id !== BACKLOG_MARKER_ID) {
-            task.assignedTo = newAssignedTo;
+          if (task && taskId !== -1) {
+            if (toResource == "Unallocated") { task.assignedTo = null; } else {
+              task.assignedTo = toResource;
+            }
+
           }
 
-          // Rebalance per segment so items stick where dropped
-          if (newAssignedTo === oldAssignedTo) {
-            rebalanceGroupPrioritiesForDomOrder(newAssignedTo, toList);
-          } else {
-            rebalanceGroupPrioritiesForDomOrder(newAssignedTo, toList);
-            rebalanceGroupPrioritiesForDomOrder(oldAssignedTo, fromList);
+          toastMessage = null;
+          if (toResource == fromResource){
+            // toastMessage = `<strong>${task.text}</strong> was re-prioritised.`; // comment out to disable
+          } else if (taskId !== -1) {
+            toastMessage = `<strong>${task.text}</strong> was re-allocated to <strong>${toResource}</strong>.`;
           }
-
-          render();
+          if (toastMessage) { showToast('success', 'Task Moved', toastMessage); }
+          updateTaskPriorityFromPage();
+          addRemoveDropzones();
+          setChangesPresent(true);
         }
       });
       window.sortableInstances.push(sAlloc);
     });
 }
-
-// builds the active filter string, shown when filters are being used
-function getActiveFilterString() {
-  const parts = [];
-
-  // (optional) text search, if you added it earlier
-  const hasSearchText = activeFilters.searchText && String(activeFilters.searchText).trim() !== "";
-  if (hasSearchText) {
-    parts.push(`Contains "${String(activeFilters.searchText).trim()}"`);
-  }
-
-  // categories
-  if (activeFilters.categories && activeFilters.categories.size > 0) {
-    const names = [...activeFilters.categories].map(code => {
-      const c = categoryMap[code];
-      return c ? c.name : code;
-    });
-    parts.push(`Category in [${names.join(", ")}]`);
-  }
-
-  // milestones (+ special DIRECT date pseudo-filter)
-  if (activeFilters.milestones && activeFilters.milestones.size > 0) {
-    const names = [...activeFilters.milestones].map(idStr => {
-      if (idStr === FILTER_DIRECT) return "Direct-dated";
-      const ms = milestoneMap[Number(idStr)];
-      return ms ? ms.name : `Milestone ${idStr}`;
-    });
-    parts.push(`Milestone in [${names.join(", ")}]`);
-  }
-
-  if (parts.length === 0) return "No active filters. Showing all tasks.";
-  return parts.join(" && ");
+// this function sets up the add task modal (prefills the allocation to where it was clicked from)
+function setupAndShowAddTaskModal(name){
+  if (name == "Unallocated") { $("#dialog-add-task-assigned").val('');  }
+  else { $("#dialog-add-task-assigned").val(name); }
+  $('#dialog-add-task').get(0).showModal();
 }
+// this creates a stored task when save button is pressed on the add task modal
+function addMilestone() {
 
-// determines if a task matches the active filters
-function matchesActiveFilters(task) {
-  if (task.isBacklogDivider) return true; // always show divider
+  m = {}
+  m.id = generateUniqueMilestoneId();
 
-  // Category (OR within group)
-  if (activeFilters.categories.size > 0) {
-    if (!task.category || !activeFilters.categories.has(task.category)) return false;
-  }
+  m.name = $("#dialog-add-milestone-name").val(); if (m.name == ""){ m.name = "UN-NAMED MILESTONE - GIVE ME A NAME!! 🤣"; } $("#dialog-add-milestone-name").val(""); // clear it for next time
+  m.date = $("#dialog-add-milestone-date").val(); if (m.date == ""){ m.date = null; } $("#dialog-add-milestone-date").val("");
+  m.tentative = $("#dialog-add-milestone-tentative").prop("checked"); $("#dialog-add-milestone-tentative").prop("checked", false);
+  m.link = $("#dialog-add-milestone-other").val(); if (m.link == ""){ m.link = null; } $("#dialog-add-milestone-other").val("");
 
-  // Milestone / Direct-driven (OR within group)
-  if (activeFilters.milestones.size > 0) {
-    const isDirectDriven = !!task.due && !task.milestoneId;
-    const matchesDirect  = isDirectDriven && activeFilters.milestones.has(FILTER_DIRECT);
-    const matchesMs      = !!task.milestoneId && activeFilters.milestones.has(String(task.milestoneId));
-    if (!matchesDirect && !matchesMs) return false;
-  }
-
-  // Text match (case-insensitive) against task text OR milestone name
-  if (activeFilters.searchText && activeFilters.searchText.trim() !== "") {
-    const needle = activeFilters.searchText.trim().toLowerCase();
-    const taskText = (task.text || "").toLowerCase();
-
-    let msName = "";
-    if (task.milestoneId) {
-      const ms = milestoneMap[task.milestoneId];
-      if (ms) msName = (ms.name || "").toLowerCase();
-    }
-
-    if (!taskText.includes(needle) && !msName.includes(needle)) return false;
-  }
-
-  return true;
+  USERDATA.milestones.push(m)
+  showToast('success', 'Milestone Added', `<strong>${m.text}</strong> was created!`)
+  updatePage();
 }
+// this shows the edit milestone modal
+function setupAndShowEditMilestoneModal(id){
+  m = milestoneMap[id];  
+  $("#dialog-edit-milestone-name-disp").text(m.name);
+  $('#dialog-edit-milestone-id').val(m.id);
+  $('#dialog-edit-milestone-name').val(m.name);
+  $('#dialog-edit-milestone-date').val(m.date || "");
+  $('#dialog-edit-milestone-tentative').prop("checked", !!m.tentative);
+  $('#dialog-edit-milestone-other').val(m.link || "");
+  $('#dialog-edit-milestone').get(0).showModal();
+}
+// this updates the stored milestone when the dave button is pressed on the edit milestone modal
+function saveEditedMilestone() {
 
+  targetId = Number($("#dialog-edit-milestone-id").val()); $('#dialog-edit-milestone-id').val("");
+  $("#dialog-edit-milestone-name-disp").text("");
+
+  m = milestoneMap[targetId];
+
+  m.name = $('#dialog-edit-milestone-name').val(); if (m.name == "") { m.name = "UN-NAMED MILESTONE - GIVE ME A NAME!! 🤣"; } $("#dialog-edit-milestone-name").val("");
+  m.date = $('#dialog-edit-milestone-date').val(); if (m.date == ""){ m.date = null; } $('#dialog-edit-milestone-date').val("");
+  m.tentative = $('#dialog-edit-milestone-tentative').prop("checked"); $('#dialog-edit-milestone-tentative').prop("checked", false);
+  m.link = $("#dialog-edit-milestone-other").val(); if (m.link == ""){ m.link = null; } $("#dialog-edit-milestone-other").val("");
+
+  showToast('success', 'Milestone Edited', `<strong>${m.name}</strong> was edited successfully.`)
+
+  updatePage();
+
+}
+// this shows the milestone deletion alert dialog
+function askMilestoneDeletion(id){
+  m = milestoneMap[id];
+  $("#alert-delete-milestone-name").text(m.name);
+  $("#alert-delete-milestone button.confirm").attr("data-task-id", id);
+  linkedTaskCount = USERDATA.tasks.filter(t => t.milestoneId == m.id).length;
+  if (linkedTaskCount) {
+    $("#alert-delete-milestone .linked .count").text(linkedTaskCount); $("#alert-delete-milestone .linked").removeClass("hidden");
+  } else { $("#alert-delete-milestone .linked .count").text(linkedTaskCount); $("#alert-delete-milestone .linked").addClass("hidden"); }
+  $("#alert-delete-milestone").get(0).showModal();
+}
+// this deletes a stored milestone when confirmed on the milestone deletion alert dialog - waterfalling dates to linked tasks first
+function deleteMilestone(id){
+  m = milestoneMap[id];
+  USERDATA.tasks.filter(t => t.milestoneId == id).forEach(t => {
+    t.date = m.date;
+    t.milestoneId = null;
+  })
+  deletedTaskText = m.name;
+  USERDATA.milestones = USERDATA.milestones.filter(t => id != t.id);
+  showToast('success', 'Milestone Deleted', `<strong>${deletedTaskText}</strong> is now deleted.`);
+  updatePage();
+}
+// this creates a stored task when save button is pressed on the add task modal
+function addTask() {
+
+  t = {}
+  t.id = generateUniqueTaskId();
+
+  t.text = $("#dialog-add-task-name").val(); if (t.text == ""){ t.text = "UN-NAMED TASK - GIVE ME A NAME!! 🤣"; } $("#dialog-add-task-name").val("");
+  t.assignedTo = $("#dialog-add-task-assigned").val(); if (t.assignedTo == ""){ t.assignedTo = null; } $("#dialog-add-task-assigned").val("");
+  newMilestone = Number($("#dialog-add-task-milestone").val()); $("#dialog-add-task-milestone").val("")
+  newDate = $("#dialog-add-task-date").val(); $("#dialog-add-task-date").val("");
+
+  if (newMilestone){
+    t.milestoneId = newMilestone;
+    t.date = null;
+  } else if (newDate != "") {
+    t.milestoneId = null;
+    t.date = newDate;
+  } else {
+    t.milestoneId = null;
+    t.date = null;
+  }
+
+  t.category = $("#dialog-add-task-category").val(); if (t.category == ""){ t.category = null; } $("#dialog-add-task-category").val("")
+  t.completed = $("#dialog-add-task-completed").prop("checked"); if (t.completed){ t.completed = todayYMD(); } $("#dialog-add-task-completed").prop("checked", false)
+  t.linkConf = $("#dialog-add-task-confluence").val(); if (t.linkConf == ""){ t.linkConf = null; } $("#dialog-add-task-confluence").val("");
+  t.linkJira = $("#dialog-add-task-jira").val(); if (t.linkJira == ""){ t.linkJira = null; } $("#dialog-add-task-jira").val("");
+  t.linkOther = $("#dialog-add-task-other").val(); if (t.linkOther == ""){ t.linkOther = null; } $("#dialog-add-task-other").val("");
+
+  USERDATA.tasks.push(t)
+  showToast('success', 'Task Added', `<strong>${t.text}</strong> was created!`)
+  updatePage();
+}
+// this shows the edit task modal
+function setupAndShowEditTaskModal(id){
+  t = taskMap[id];
+  $("#dialog-edit-task-name-disp").text(t.text);
+  $('#dialog-edit-task-id').val(t.id);
+  $('#dialog-edit-task-name').val(t.text);
+  if (t.assignedTo == "Unallocated") { $('#dialog-edit-task-assigned').val(''); }
+  else { $('#dialog-edit-task-assigned').val(t.assignedTo || ""); }
+  $('#dialog-edit-task-milestone').val(t.milestoneId || "");
+  $('#dialog-edit-task-date').val(t.date || "");
+  $('#dialog-edit-task-category').val(t.category || "");
+  $('#dialog-edit-task-completed').prop("checked", !!t.completed);
+  $('#dialog-edit-task-confluence').val(t.linkConf || "");
+  $('#dialog-edit-task-jira').val(t.linkJira || "");
+  $('#dialog-edit-task-other').val(t.linkOther || "");
+  $('#dialog-edit-task').get(0).showModal();
+}
+// this updates the stored task when the dave button is pressed on the edit task modal
+function saveEditedTask() {
+
+  targetId = Number($("#dialog-edit-task-id").val()); $("#dialog-edit-task-id").val("");
+  $("#dialog-edit-task-name-disp").text("");
+
+  t = taskMap[targetId];
+
+  t.text = $("#dialog-edit-task-name").val(); if (t.text == "") { t.text = "UN-NAMED TASK - GIVE ME A NAME!! 🤣"; } $("#dialog-edit-task-name").val("");
+  t.assignedTo = $("#dialog-edit-task-assigned").val(); if (t.assignedTo == ""){ t.assignedTo = null; } $("#dialog-edit-task-assigned").val("");
+  newMilestone = Number($("#dialog-edit-task-milestone").val()); $("#dialog-edit-task-milestone").val("");
+  newDate = $("#dialog-edit-task-date").val(); $("#dialog-edit-task-date").val("")
+
+  if (newMilestone){
+    t.milestoneId = newMilestone;
+    t.date = null;
+  } else if (newDate != "") {
+    t.milestoneId = null;
+    t.date = newDate;
+  } else {
+    t.milestoneId = null;
+    t.date = null;
+  }
+
+  t.category = $("#dialog-edit-task-category").val(); if (t.category == ""){ t.category = null; } $("#dialog-edit-task-category").val("");
+  inputCompleted = $("#dialog-edit-task-completed").prop("checked");
+  console.log(t.text, t.completed, Boolean(inputCompleted), inputCompleted)
+  if (t.completed != Boolean(inputCompleted)){    
+    if (t.completed) { t.completed = false; } else if (t.completed == false) { t.completed = todayYMD(); }
+  } $("#dialog-edit-task-completed").prop("checked", false);
+  console.log(t.completed)
+
+  t.linkConf = $("#dialog-edit-task-confluence").val(); if (t.linkConf == ""){ t.linkConf = null; } $("#dialog-edit-task-confluence").val("");
+  t.linkJira = $("#dialog-edit-task-jira").val(); if (t.linkJira == ""){ t.linkJira = null; } $("#dialog-edit-task-jira").val("");
+  t.linkOther = $("#dialog-edit-task-other").val(); if (t.linkOther == ""){ t.linkOther = null; } $("#dialog-edit-task-other").val("");
+
+  showToast('success', 'Task Edited', `<strong>${t.text}</strong> was edited successfully.`)
+
+  updatePage();
+
+}
+// this either shows the task complete alert dialog or uncompletes a stored task
+function toggleMilestoneTentative(id){
+  m = milestoneMap[id];
+  m.tentative = !m.tentative;
+  if (!m.tentative){
+    showToast('success', 'Milestone Not-Tentative', `<strong>${m.name}</strong> is set to NOT tentative.`)
+    updatePage();
+  }else{    
+    showToast('success', 'Milestone Tentative', `<strong>${m.name}</strong> is set to tentative.`)
+    updatePage();
+  }
+}
+// this either shows the task complete alert dialog or uncompletes a stored task
+function toggleTaskCompletion(id){
+  t = taskMap[id];
+  if (!t.completed){
+    $("#alert-complete-task-name").text(t.text);
+    $("#alert-complete-task button.confirm").attr("data-task-id", id);
+    $("#alert-complete-task").get(0).showModal();
+  }else{
+    t.completed = false;
+    showToast('success', 'Task INcomplete', `<strong>${t.text}</strong> is set to NOT complete.`)
+    updatePage();
+  }
+}
+// this sets a stored task to complete when confirmed on the task complete alert dialog
+function setTaskComplete(id){
+  t = taskMap[id];
+  t.completed = todayYMD();
+  showToast('success', 'Task Completed', `<strong>${t.text}</strong> is set to complete.`);
+  updatePage();
+}
+// this shows the task deletion alert dialog
+function askTaskDeletion(id){
+  t = taskMap[id];
+  $("#alert-delete-task-name").text(t.text);
+  $("#alert-delete-task button.confirm").attr("data-task-id", t.id);
+  $("#alert-delete-task").get(0).showModal();
+}
+// this deletes a stored task when confirmed on the task deletion alert dialog
+function deleteTask(id){
+  deletedTaskText = USERDATA.tasks.filter(t => id == t.id)[0].text;
+  USERDATA.tasks = USERDATA.tasks.filter(t => id != t.id);
+  showToast('success', 'Task Deleted', `<strong>${deletedTaskText}</strong> is now deleted.`);
+  updatePage();
+}
+// this shows the completed task deletion alert dialog (if there is a valid date chosen)
+function askDeleteCompleteTasksBefore(){
+  clearTaskFilters();
+  $("input#remove-complete-tasks-threshold-date").attr("aria-invalid", "false");
+  dateStr = $("input#remove-complete-tasks-threshold-date").val();
+  if (dateStr == "") { $("input#remove-complete-tasks-threshold-date").attr("aria-invalid", "true"); return false; }
+  $("#alert-delete-completed-tasks-date").text(dateStr);  
+  document.getElementById('alert-delete-completed-tasks').showModal();    
+}
+// this deletes completed tasks with a date before selected date. occurs on alert confirmation
+function deleteCompleteTasksBefore(){
+  ymd = $("input#remove-complete-tasks-threshold-date").val();
+  USERDATA.tasks = USERDATA.tasks.filter(t => {    
+    if (!t.completed) return true; // If no completed date → keep it    
+    return t.completed.localeCompare(ymd) >= 0; // Keep only if completed >= provided date
+  });
+  $("input#remove-complete-tasks-threshold-date").val("");
+  showToast('success', 'Tasks Deleted', `Completed tasks before <strong>${ymd}</strong> are now deleted.`);
+  updatePage();
+  
+}
+// this renders a resources' task timeline and shows in the task timeline modal - triggered by button press
+function showResourceTimeline(name){
+  $('#dialog-task-resource-name').text(name);
+  $('#dialog-task-timeline .timeline-holder').html('');
+  renderTasksTimeline(name);
+  $('#dialog-task-timeline').get(0).showModal();
+}
 // clears all active filters
-function clearFilters(silent = false) {
+function clearTaskFilters() {
   activeFilters.categories.clear();
   activeFilters.milestones.clear();
   activeFilters.searchText = "";
-  $('#f-search').val('');
-  // Uncheck all boxes if modal is open
-  $('#filtersModalBody input[type="checkbox"]').prop('checked', false);
-  updateFiltersButtonState();
-  if (!silent) render();  
+  var currentUnsavedChanges = unsavedChanges;
+  updatePage();
+  setChangesPresent(currentUnsavedChanges);
 }
-
-// called when an action justifies (or requires a save to not be lossed) - enables save button and warning
-function markUnsavedChanges() {
-  hasUnsavedChanges = true;
-  $("#saveButton").prop("disabled", false);
+// apply the filters from the modal inputs
+function applyFilters(){
+  activeFilters.categories.clear();
+  for (const item of $("#dialog-configure-task-filters .select-multiple-categories").get(0).value) {
+    activeFilters.categories.add(item);
+  }
+  activeFilters.milestones.clear();
+  for (const item of $("#dialog-configure-task-filters .select-multiple-milestones").get(0).value) {
+    activeFilters.milestones.add(item);
+  }
+  activeFilters.searchText = $("#dialog-configure-task-filters #filters-string").val();  
+  var currentUnsavedChanges = unsavedChanges;
+  updatePage();
+  setChangesPresent(currentUnsavedChanges);
 }
-
-// Clear flag after saving - disables save button and warning
-function clearUnsavedChanges() {
-  hasUnsavedChanges = false;
-  $("#saveButton").prop("disabled", true);
+// this prefills the existing filters and shows the filters modal
+function setupAndShowFiltersModal(){
+  $("#dialog-configure-task-filters .select-multiple-categories").get(0).value = [...activeFilters.categories];
+  $("#dialog-configure-task-filters .select-multiple-milestones").get(0).value = [...activeFilters.milestones];
+  $("#dialog-configure-task-filters #filters-string").val(activeFilters.searchText);
+  $('#dialog-configure-task-filters').get(0).showModal();
 }
-
-// creates a task html element for use in the export HTML function
-function formatTaskHTML(task) {
-
-  const li = document.createElement("li");
-  let text = "";
+// this sets up and shows the configure resources modal
+function setupResourcesModal(){
+  tmplt = $('#dialog-configure-resources .editable-resource-entry.hidden')
+  $(tmplt).parent().find(".editable-resource-entry:not(.hidden)").remove();
+  USERDATA.resources.forEach(r => {
+    resDiv = tmplt.clone().removeClass("hidden")
+    resDiv.attr("data-name", r.name)
+    resDiv.find(".resource-name").val(r.name)
+    resDiv.find(".resource-type").val(r.type)
+    resDiv.appendTo($(tmplt).parent())
+  })
   
-  if (task.category) text += `${task.category} | `;
-  text += `${task.text}`;
+  $('#dialog-configure-resources').get(0).showModal();
   
-  if (task.due) text += ` | Due: ${task.due}`;
-  else if (task.milestoneId) {
-    const ms = milestoneMap[task.milestoneId];
-    if (ms)  text += ` | Milestone: ${ms.name} (${ms.date})`;
-  }
-  else {
-    text += `| No due date`;
-  }
-
-  const links = [];
-  if (task["link-jira"]) links.push(linkTag(task["link-jira"], "JIRA"));
-  if (task["link-conf"]) links.push(linkTag(task["link-conf"], "Confluence"));
-  if (task["link-other"]) links.push(linkTag(task["link-other"], "Other"));
-
-  if (links.length > 0) { text += ` | `; }
-  li.textContent = text;
-  if (links.length > 0) {
-    links.forEach(link => {
-      li.appendChild(document.createTextNode(" "));
-      li.appendChild(link);
-    });
-  }
-
-  return li;
 }
-
-// does the export HTML function
-function exportHTMLSummary() {
-  const div = document.createElement("div");
-
-  // Page title
-  div.appendChild(el("h1", pageTitle));
-  div.appendChild(el("br"));
-
-  // Milestones
-  div.appendChild(el("h2", "Milestones"));
-  div.appendChild(el("ul", null,
-    ...milestones
-      .slice()
-      .sort((a, b) => new Date(a.date) - new Date(b.date))
-      .map(m => el("li", `${m.name} (${m.date})`))
-  ));
-
-  div.appendChild(el("br"));
-
-  const sorted = tasks
-    .filter(t => !t.completed)
-    .filter(matchesActiveFilters)
-    .slice()
-    .sort((a, b) => (a.priority ?? 9999) - (b.priority ?? 9999));
-  const dividerIndex = sorted.findIndex(t => t.isBacklogDivider);
-
-  // Allocations
-  div.appendChild(el("h2", "Allocations"));
-  allocationOptions.forEach(option => {
-    const optionName = option.name;
-    const assigned = tasks
-      // .filter(t => t.assignedTo === option && !t.completed)
-      .filter(t => t.assignedTo === optionName && !t.completed)
-      .filter(matchesActiveFilters)
-      .sort((a, b) => (a.priority ?? 9999) - (b.priority ?? 9999));
-
-    const active = assigned.filter(t => t.priority < sorted[dividerIndex]?.priority);
-    const backlog = assigned.filter(t => t.priority > sorted[dividerIndex]?.priority);
-
-    // div.appendChild(el("h3", option));
-    div.appendChild(el("h3", optionName));
-
-    if (active.length === 0 && backlog.length === 0) {
-      div.appendChild(el("p", "(No tasks)"));
-    } else {
-      if (active.length > 0) {
-        div.appendChild(el("p", "Active"));
-        div.appendChild(el("ul", null, ...active.map(formatTaskHTML)));
-      }
-      if (backlog.length > 0) {
-        div.appendChild(el("p", "Backlog"));
-        div.appendChild(el("ul", null, ...backlog.map(formatTaskHTML)));
+// this updates resources as needed from the resources modal apply event
+function updateResourcesFromModal(){
+  tmplt = $('#dialog-configure-resources .editable-resource-entry.hidden')
+  holder = tmplt.parent();  
+  holder.find(".editable-resource-entry:not(.hidden)").each(function(index, resEl) {
+    if ($(resEl).attr("data-name")){ // if not a new one
+      if ($(resEl).hasClass("opacity-25")){ // to be deleted      
+        // reallocate the tasks to null
+        USERDATA.tasks.filter(t => t.assignedTo == $(resEl).attr("data-name")).forEach(t => {t.assignedTo = null;});
+        // remove the resource
+        USERDATA.resources = USERDATA.resources.filter(r => r.name != $(resEl).attr("data-name")); 
+        showToast('success', 'Resource Deleted', `<strong>${$(resEl).attr("data-name")}</strong> was deleted!`)
+        // console.log($(resEl))
+      } 
+      else { // current resource to be edited
+        res = resourceMap[$(resEl).attr("data-name").toLowerCase()] // resource to change name and type
+        newName = $(resEl).find(".resource-name").val();     
+        newType = $(resEl).find(".resource-type").val();   
+        if (!(res.name == newName && res.type == newType)){
+          res.name = newName
+          if (res.name == "") { res.name = "UN-NAMED RESOURCE - GIVE ME A NAME!! 🤣"}
+          res.type = newType        
+          // change linked task reference to new name
+          USERDATA.tasks.filter(t => t.assignedTo == $(resEl).attr("data-name")).forEach(t => {t.assignedTo = newName;});
+          showToast('success', 'Resource Edited', `<strong>${$(resEl).attr("data-name")}</strong> was edited!`)
+          // console.log($(resEl))
+        }
       }
     }
-    div.appendChild(el("br"));
+    else if (!$(resEl).hasClass("opacity-25")){ // new resource (not deleted)
+      r = {}
+      r.name = $(resEl).find(".resource-name").val();  
+      if (r.name == "") { r.name = "UN-NAMED RESOURCE - GIVE ME A NAME!! 🤣"}   
+      r.type = $(resEl).find(".resource-type").val();   
+      USERDATA.resources.push(r)
+      showToast('success', 'Resource Created', `<strong>${r.name}</strong> was created!`)
+      // console.log($(resEl))
+    }    
+  });  
+  holder.find(".editable-resource-entry:not(.hidden)").remove();
+  updatePage();
+}
+// this sets up and shows the configure categories modal
+function setupCategoriesModal(){
+  tmplt = $('#dialog-configure-categories .editable-category-entry.hidden')
+  $(tmplt).parent().find(".editable-category-entry:not(.hidden)").remove();
+  USERDATA.categories.forEach(c => {
+    console.log(c)
+    catDiv = tmplt.clone().removeClass("hidden")
+    catDiv.attr("data-code", c.code)
+    catDiv.find(".category-code").val(c.code)
+    catDiv.find(".category-name").val(c.name)
+    catDiv.find(".category-color").val(c.color).css("color", c.color);
+    catDiv.appendTo($(tmplt).parent())
+  })  
+  $('#dialog-configure-categories').get(0).showModal();
+  
+}
+// this updates resources as needed from the categories modal apply event
+function updateCategoriesFromModal(){
+  tmplt = $('#dialog-configure-categories .editable-category-entry.hidden')
+  holder = tmplt.parent();  
+  holder.find(".editable-category-entry:not(.hidden)").each(function(index, resEl) {
+    if ($(resEl).attr("data-code")){ // if not a new one
+      
+      if ($(resEl).hasClass("opacity-25")){ // to be deleted      
+        // reallocate the tasks to category=null
+        USERDATA.tasks.filter(t => t.category == $(resEl).attr("data-code")).forEach(t => {t.category = null;});
+        // remove the category
+        USERDATA.categories = USERDATA.categories.filter(r => r.code != $(resEl).attr("data-code")); 
+        showToast('success', 'Category Deleted', `<strong>${$(resEl).attr("data-code")}</strong> was deleted!`)
+        // console.log($(resEl))
+      } 
+      else { // current category to be edited
+        cat = categoryMap[$(resEl).attr("data-code").toLowerCase()] // category to change name and type
+        newName = $(resEl).find(".category-name").val();     
+        newCode = $(resEl).find(".category-code").val();   
+        newColor = $(resEl).find(".category-color").val();   
+        if (!(cat.name == newName && cat.color == newColor && cat.code == newCode)){
+          cat.name = newName
+          if (cat.name == "") { cat.name = "UN-NAMED CATEGORY - GIVE ME A NAME!! 🤣"}
+          cat.code = newCode; 
+          if (cat.code == "") { cat.code = "🤣"}
+          cat.color = newColor;
+          if (cat.color == "") { cat.color = "var(--foreground)"} // default
+          // change linked task reference to new name
+          USERDATA.tasks.filter(t => t.category == $(resEl).attr("data-code")).forEach(t => {t.category = newCode;});
+          showToast('success', 'Category Edited', `<strong>${$(resEl).attr("data-name")}</strong> was edited!`)
+          // console.log($(resEl))
+        }
+      }
+    }
+    else if (!$(resEl).hasClass("opacity-25")){ // new category (not deleted)
+      newName = $(resEl).find(".category-name").val();     
+      newCode = $(resEl).find(".category-code").val();   
+      newColor = $(resEl).find(".category-color").val(); 
+      cat = {}
+      cat.name = newName
+      if (cat.name == "") { cat.name = "UN-NAMED CATEGORY - GIVE ME A NAME!! 🤣"}
+      cat.code = newCode; 
+      if (cat.code == "") { cat.code = "🤣"}
+      cat.color = newColor;
+      if (cat.color == "") { cat.color = "var(--foreground)"} // default
+      USERDATA.categories.push(cat)
+      showToast('success', 'Category Created', `<strong>${cat.name}</strong> was created!`)
+      console.log($(resEl))
+    }    
+  });  
+  holder.find(".editable-category-entry:not(.hidden)").remove();
+  updatePage();
+}
+// this sets up the project config and setting modal
+function setupConfigModal(){
+  $("#dialog-configure-general-project-title").val(USERDATA.config.title);
+  $("#dialog-configure-general-project-logo").val(USERDATA.config.logo);
+  $("#dialog-configure-general-project-color").val(USERDATA.config.primary_color);
+  $("#dialog-configure-general-milestone-start-date").val(USERDATA.config.force_timeline_start || "");
+  $("#dialog-configure-general-milestone-end-date").val(USERDATA.config.force_timeline_end || "");
+  $("#dialog-configure-general-soon").val(USERDATA.config.soon_duration);
+  $('#dialog-configure-general').get(0).showModal();  
+}
+// this updates the project and config options when saved
+function saveConfigFromModal() {
+
+  USERDATA.config.title = $("#dialog-configure-general-project-title").val(); 
+  if (USERDATA.config.title == "") { USERDATA.config.title = "NO PROJECT NAME"; } $("#dialog-configure-general-project-title").val("");
+
+  USERDATA.config.logo = $("#dialog-configure-general-project-logo").val(); 
+  if (USERDATA.config.logo == "") { USERDATA.config.logo = "NO PROJECT LOGO"; } $("#dialog-configure-general-project-logo").val("");
+
+  USERDATA.config.primary_color = $("#dialog-configure-general-project-color").val(); 
+  if (USERDATA.config.primary_color == "") { USERDATA.config.primary_color = "#888888"; } $("#dialog-configure-general-project-color").val("");
+
+  USERDATA.config.force_timeline_start = $("#dialog-configure-general-milestone-start-date").val(); 
+  if (USERDATA.config.force_timeline_start == "") { USERDATA.config.force_timeline_start = null; } $("#dialog-configure-general-milestone-start-date").val("");
+
+  USERDATA.config.force_timeline_end = $("#dialog-configure-general-milestone-end-date").val(); 
+  if (USERDATA.config.force_timeline_end == "") { USERDATA.config.force_timeline_end = null; } $("#dialog-configure-general-milestone-end-date").val("");
+
+  USERDATA.config.soon_duration = Number($("#dialog-configure-general-soon").val()); 
+  if (USERDATA.config.soon_duration == "") { USERDATA.config.soon_duration = 7; } $("#dialog-configure-general-soon").val("");
+
+  showToast('success', 'Updated Configuration', `Updated project general configuration successfully.`)
+
+  updatePage();
+
+}
+// sorts out the dark/light theme, memory, button, default and stuff
+function themeChanger(){
+  try {
+    const stored = localStorage.getItem('themeMode');
+    if (stored ? stored === 'dark'
+                : matchMedia('(prefers-color-scheme: dark)').matches) {
+      document.documentElement.classList.add('dark');
+    }
+  } catch (_) {}
+
+  const apply = dark => {
+    document.documentElement.classList.toggle('dark', dark);
+    try { localStorage.setItem('themeMode', dark ? 'dark' : 'light'); } catch (_) {}
+  };
+
+  document.addEventListener('basecoat:theme', (event) => {
+    const mode = event.detail?.mode;
+    apply(mode === 'dark' ? true
+          : mode === 'light' ? false
+          : !document.documentElement.classList.contains('dark'));
   });
-
-  // Unallocated
-  div.appendChild(el("h3", "Unallocated"));
-  const unallocated = tasks
-    .filter(t => t.assignedTo === null && !t.completed)
-    .filter(matchesActiveFilters)
-    .sort((a, b) => (a.priority ?? 9999) - (b.priority ?? 9999));
-
-  if (unallocated.length === 0) {
-    div.appendChild(el("p", "(No tasks)"));
-  } else {
-    const active = unallocated.filter(t => t.priority < sorted[dividerIndex]?.priority);
-    const backlog = unallocated.filter(t => t.priority > sorted[dividerIndex]?.priority);
-
-    if (active.length > 0) {
-      div.appendChild(el("p", "Active"));
-      div.appendChild(el("ul", null, ...active.map(formatTaskHTML)));
-    }
-
-    if (backlog.length > 0) {
-      div.appendChild(el("p", "Backlog"));
-      div.appendChild(el("ul", null, ...backlog.map(formatTaskHTML)));
-    }
+}
+// Warn user before closing or navigate away (if unsaved changes exist)
+window.addEventListener("beforeunload", (event) => {
+  if (unsavedChanges){
+    event.preventDefault();
+    event.returnValue = "Are you sure? There may be unsaved changes on this page!"; // Chrome shows default prompt
   }
+});
+// this saves the HTML file
+function quineSavePage(readonly=false) {
+  
+  // setting up the UI state
+  clearTaskFilters();
+  sanitizeDOM();
+  $("details#allocations-menu").prop("open", true);
+  $("details#configurations-menu").prop("open", true);
+  $("#milestones-tab-2").click();
+  $(".toast").remove();
 
-  div.appendChild(el("br"));
-  // Completed
-  div.appendChild(el("h2", "Completed Tasks"));
-  const completed = tasks
-    .filter(t => t.completed)
-    .filter(matchesActiveFilters)
-    .sort((a, b) => (a.priority ?? 9999) - (b.priority ?? 9999));
-  if (completed.length === 0) {
-    div.appendChild(el("p", "(None)"));
-  } else {
-    div.appendChild(el("ul", null, ...completed.map(formatTaskHTML)));
-  }
+  USERDATA.config.last_saved = nowString();
+
+  // rebuild the html and replace the data with the in-memory version
+  html = `<!DOCTYPE html>\n` + document.documentElement.outerHTML.replace(
+    /(?<=[<]!-- data --[>])[\s\S]*(?=[<]!-- end data --[>])/,
+    `\n<script>USERDATA = ${JSON.stringify(USERDATA, null, 2)}<\/script>\n`
+  );
+
+  // this will break this part of the script, however the readonly shouldn't use this function
+  if (readonly){ html = html.replace( "const readOnlyMode=false;", "const readOnlyMode=true;" ) } 
+  
+  // make it downloadable
+  const blob = new Blob([html], { type: 'text/html' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  let rawFilename = window.location.href.split('/').pop();
+  rawFilename = rawFilename.split('?')[0].split('#')[0];
+  if (readonly){ rawFilename=rawFilename.replace(".html", "_ro.html") }
+  a.download = rawFilename;
+  
+  //trigger the download
+  a.click();
+  URL.revokeObjectURL(a.href);
+  
+  console.log("Savefile created.")
+
+  updatePage();
+  setChangesPresent(false);
+
+}
+// this copys the data as html to the clipboard for emailing
+function exportHTMLSummary() {
+  
+  div = $("<div>");
+
+
+  div.append($("<h1>").text(USERDATA.config.title));
+
+  div.append($("<h2>").text("Milestones"));
+  msul = $("<ul>");
+  USERDATA.milestones
+    .sort((a, b) => {
+      if (!a.date && !b.date) return 0;
+      if (!a.date) return 1;      // undated milestones last
+      if (!b.date) return -1;
+      return new Date(a.date) - new Date(b.date);
+    })
+    .forEach(m => { 
+      msul.append($("<li>").text(`${m.name} (${m.date || "Perpetual / No Date"})`))
+    })  
+  div.append(msul);
+  div.append($("<br />"));
+
+
+  [...USERDATA.resources, {"name":"Unallocated","type":""}].forEach(resource => {      
+    if (resource.name == "Unallocated"){
+      assignedTasks = USERDATA.tasks
+      .filter(t => !t.completed)
+      .filter(t => (t.assignedTo === null))
+      .sort((a, b) => (a.priority ?? 9999) - (b.priority ?? 9999));
+      div.append($("<h2>").html(`${resource.name}`));
+      tkul = $("<ul>");
+    }else{
+      assignedTasks = USERDATA.tasks
+      .filter(t => !t.completed)
+      .filter(t => (t.assignedTo === resource.name))
+      .sort((a, b) => (a.priority ?? 9999) - (b.priority ?? 9999));
+      div.append($("<h2>").html(`${resource.name} <small>(${resource.type})</small>`));
+      tkul = $("<ul>");
+    }
+    assignedTasks.sort((a, b) => b.active - a.active).forEach(t => { 
+      tkli = $("<li>")
+      if (!t.active) { tkli.append(`BACKLOG: `); }
+      tkli.append(t.text);
+      if (t.category) { tkli.append(` [${t.category}]`); }
+      if (t.milestoneId) { 
+        ms = milestoneMap[t.milestoneId]; 
+        if (ms) { 
+          if (ms.date) { tkli.append(` (Milestone: ${ms.name} - ${ms.date})`) }
+          else { tkli.append(` (Milestone: ${ms.name} - Perpetual / No Date)`) } ; 
+        } 
+      }
+      else if (t.date) { tkli.append(` (Key Date: ${t.date})`); }
+      else { tkli.append(` (Perpetual / No Date) `); } 
+      if (t.linkJira) tkli.append(` `).append($("<a>",{
+        href: t.linkJira,
+        text: 'JIRA',
+        target: '_blank'
+      }));
+      if (t.linkConf) tkli.append(` `).append($("<a>",{
+        href: t.linkConf,
+        text: 'Confluence',
+        target: '_blank'
+      }));
+      if (t.linkOther) tkli.append(` `).append($("<a>",{
+        href: t.linkOther,
+        text: 'Other',
+        target: '_blank'
+      }));    
+      tkul.append(tkli)
+    })
+    div.append(tkul)     
+  })
+
 
   // Copy HTML to clipboard
-  const blob = new Blob([div.innerHTML], { type: "text/html" });
+  const blob = new Blob([div[0].innerHTML], { type: "text/html" });
   const data = [new ClipboardItem({ "text/html": blob })];
 
   navigator.clipboard.write(data)
     .then(() => showAlertModal("HTML summary copied to clipboard.", "Export"))
     .catch(() => showAlertModal("Failed to copy to clipboard.", "Export"));
+  
+  showToast('success', 'Copy to Clipboard', "Copied data to clipboard for pasting - doesn't include completed tasks.");
 }
-
-
-// this is a function benchmarking tool which isn't normally used.
-function benchmarkRender(label, renderFn, iterations = 10) {
-  const times = [];
-
-  for (let i = 0; i < iterations; i++) {
-    const start = performance.now();
-    renderFn();
-    const end = performance.now();
-    times.push(end - start);
-  }
-
-  const avg = times.reduce((sum, t) => sum + t, 0) / iterations;
-  const min = Math.min(...times);
-  const max = Math.max(...times);
-
-  console.log(`📊 Benchmark: ${label}`);
-  console.log(`  Runs: ${iterations}`);
-  console.log(`  Avg: ${avg.toFixed(2)} ms`);
-  console.log(`  Min: ${min.toFixed(2)} ms`);
-  console.log(`  Max: ${max.toFixed(2)} ms`);
-}
-
-
-
-
-// this is the onload function which runs when the page is fully loaded
-// - it contains the onclick event handles (delegated for performance)
-// - still needs commenting for what each function does
-$(document).ready(function () {  
-
-  console.log("ONLOAD.")
-
-  // INITIALISATION
-  const $root = $('#container');
-  $root.off('.app');
-  
-  render(); // this is the first render call
-  clearUnsavedChanges();
-  $("#saveButton").prop( "disabled", true )
-
-  // benchmarkRender("Optimized Render", render, 20); // test function
-
-  // THESE ARE EVENT HANDLERS (DELEGATED TO $('#container'))
-  $root
-  .off('click.app', '#saveButton')
-  .on('click.app', '#saveButton', function () {
-    // event for saving the current state to a downloaded HTML (override existing usually)
-
-    // setting up the UI state
-    clearFilters(true);
-    $("#filtersModalBody").html("");
-    clearRenderedElements();
-    $("#milestones details").prop("open", false);
-    $("#allocate details").prop("open", true);
-    $("#milestoneTimelineExpander details").prop("open", true);
-    $("#completedTasks details").prop("open", false);
-    $(".toast").removeClass("show");
-    $(".toast").remove();
-
-    // rebuild the html and replace the data with the in-memory version
-    const html = `<!DOCTYPE html>\n` + document.documentElement.outerHTML.replace(
-      /(?<=[<]!-- data --[>])[\s\S]*(?=[<]!-- end data --[>])/,
-      `\n<script>` + 
-      `\nsaveDate = "${nowString()}";` + 
-      `\npageTitle = "${pageTitle}";` + 
-      `\nbyLine = "${byLine}";` + 
-      `\rrenderReadOnly = ${renderReadOnly};` + 
-      `\nlogo = \`${logo}\`;` + 
-      `\nconst allocationOptions = ${JSON.stringify(allocationOptions, null, 2)};` + 
-      `\nconst milestones = ${JSON.stringify(milestones, null, 2)};` + 
-      `\nconst tasks = ${JSON.stringify(tasks, null, 2)};` + 
-      `\nconst categories = ${JSON.stringify(categories, null, 2)};` +   // <— add this
-      `\n<\/script>\n`
-    );
-
-    // make it downloadable
-    const blob = new Blob([html], { type: 'text/html' });
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    let rawFilename = window.location.href.split('/').pop();
-    rawFilename = rawFilename.split('?')[0].split('#')[0];
-    a.download = rawFilename;
-    
-    //trigger the download
-    a.click();
-    URL.revokeObjectURL(a.href);
-    
-    console.log("Savefile created.")
-    // re-render - may not be needed
-    render();
-    clearUnsavedChanges();
-  });
-
-  // this is the confirmation button event for the confirmation modal
-  $root
-  .off('click.app', '#confirmYes')
-  .on('click.app', '#confirmYes', function () {
-    if (typeof confirmCallback === 'function') confirmCallback();
-    $('#confirmModal')[0].close();
-  });
-
-  // this is the cancel button event for the confirmation modal
-  $root
-  .off('click.app', '#confirmNo')
-  .on('click.app', '#confirmNo', function () {
-    $('#confirmModal')[0].close();
-  });
-
-  // this is the close button event for the alert modal
-  $root
-  .off('click.app', '#alertClose')
-  .on('click.app', '#alertClose', function () {
-    $('#alertModal')[0].close();
-  });  
-
-  // this is the cancel button event for the edit task modal
-  $root
-  .off('click.app', '#cancelEditModal')
-  .on('click.app', '#cancelEditModal', function () {
-    $('#taskEditModal')[0].close();
-  });
-  
-  // this is open filter options button event
-  $root
-    .off('click.app', '#openFilters')
-    .on('click.app', '#openFilters', function () {
-      buildFiltersModalUI();
-      $('#filtersModal')[0].showModal();
-    });
-
-  // this is the text search filter input event
-  $root.off('input', '#f-search').on('input', '#f-search', (e) => {
-    activeFilters.searchText = e.target.value || "";
-    updateFiltersButtonState();
-    render();
-  });
-
-  // this is the close button event on the filters modal
-  $root
-    .off('click.app', '#filtersCloseBtn')
-    .on('click.app', '#filtersCloseBtn', function () {
-      $('#filtersModal')[0].close();
-    });
-
-  // this is the clear filters button event on the filters modal
-  $root
-    .off('click.app', '#filtersClearBtn')
-    .on('click.app', '#filtersClearBtn', function () {
-      clearFilters(); // also re-renders
-    });
-
-  // this is the checkbox changes event on the filters modal
-  $root
-    .off('change.app', '#filtersModalBody input[type="checkbox"]')
-    .on('change.app', '#filtersModalBody input[type="checkbox"]', function () {
-      const type = $(this).data('filter-type');
-      const val  = String($(this).val());
-      const set  = (type === 'category') ? activeFilters.categories : activeFilters.milestones;
-      this.checked ? set.add(val) : set.delete(val);
-      render();
-    });
-
-  // this is the save task button event on the edit task modal
-  $root
-  .off('click.app', '#saveEditedTask')
-  .on('click.app', '#saveEditedTask', function () {
-    const id = parseInt($(this).attr("data-saveitemid"));
-    const task = tasks.find(t => t.id === id);
-    if (!task) return;
-
-    // Get new values
-    const name = $('#taskName').val().trim();
-    const due = $('#taskDue').val();
-    const milestoneIdRaw = $('#taskMilestone').val();
-    const milestoneId = milestoneIdRaw ? parseInt(milestoneIdRaw) : null;
-    const category = $('#taskCategory').val().trim() || null;    
-
-    if (!name) {
-      showAlertModal("Please enter a task name.", "Task Update");
-      return;
-    }
-
-    task.text = name;
-    task.due = milestoneId ? null : due; // If milestone selected, clear due date
-    if (task.due === "") { task.due = null; }
-    task.milestoneId = milestoneId;
-    task.category = category;
-
-    task['link-conf'] = $('#confluenceUrl').val();
-    task['link-jira'] = $('#jiraUrl').val();
-    task['link-other'] = $('#otherUrl').val();
-    task.completed = $('#taskCompleted').is(":checked");
-    task.assignedTo = $("#taskAssigned").val() || null; // NEW LINE
-
-    $('#taskEditModal')[0].close();
-
-    console.log(`Task '${name}' edited via modal.`)
-    render();
-
-  });
-
-  // this is the side menu link click event - smooth scroll
-  $root
-  .off('click.app', '#sidebar a[href^="#"]')
-  .on('click.app', '#sidebar a[href^="#"]', function (e) {
-    e.preventDefault();
-    const targetId = $(this).attr('href').substring(1);
-    const $target = $('#' + targetId);
-    const $main = $('main');
-    if ($target.length) {
-      const offsetTop = $target.position().top + $main.scrollTop();
-      $main.animate({ scrollTop: offsetTop }, 400);
-      // Prevent hash in URL
-      history.replaceState(null, document.title, window.location.pathname + window.location.search);
-    }
-  });
-
-  // this is the add milestone button event
-  $root
-  .off('click.app', '#addMilestone')
-  .on('click.app', '#addMilestone', function () {
-
-    const addBtn = document.getElementById("addMilestone");
-    const nameInput = addBtn.parentElement.querySelector('.ms-name');
-    const dateInput = addBtn.parentElement.querySelector('.ms-date');
-
-    const name = nameInput.value.trim();
-    const date = dateInput.value;
-
-    if (!name) {
-      showAlertModal("Please enter a name for the milestone.", "Milestone Creation");
-      return;
-    }
-
-    const newId = generateUniqueMilestoneId();
-    milestones.push({ id: newId, name, date });
-
-    nameInput.value = '';
-    dateInput.value = '';
-
-    console.log(`Milestone '${name}' added.`)
-    render();
-  });
-
-  // this is the add task button event (handles all add buttons)
-  $root
-  .off('click.app', '.addTask')
-  .on('click.app', '.addTask', function () {
-    const $group = $(this).closest('[role="group"]');
-    const nameInput = $group.find('.tsk-name')[0];
-    const milestoneSelect = $group.find('.tsk-milestone')[0];
-    const dateInput = $group.find('.tsk-date')[0];
-    const categorySelect = $group.find('.tsk-category')[0];
-
-    const name = (nameInput?.value || "").trim();
-    const milestoneId = milestoneSelect?.value ? parseInt(milestoneSelect.value) : null;
-    const date = dateInput?.value || null;
-    const category = categorySelect?.value || null;
-
-    if (!name) {
-      showAlertModal("Please enter a name.", "Task Creation");
-      return;
-    }
-
-    const assignedTo = $(this).data('allocation') || null; // auto-assign to section
-
-    const newId = generateUniqueTaskId();
-    tasks.push({
-      id: newId,
-      text: name,
-      due: milestoneId ? null : date,
-      milestoneId,
-      assignedTo,
-      category,
-      priority: normalizeAndGetNextPriority()
-    });
-
-    // clear only this group's inputs
-    if (nameInput) nameInput.value = '';
-    if (milestoneSelect) milestoneSelect.value = '';
-    if (dateInput) dateInput.value = '';
-    if (categorySelect) categorySelect.value = '';
-
-    console.log(`Task '${name}' added${assignedTo ? ` (allocated to ${assignedTo})` : ''}.`);
-    render();
-  });
-
-  // this is the edit milestone inline input event
-  $root
-  .off('blur.app keypress.app', '.ms-name, .ms-date')
-  .on('blur.app', '.ms-name, .ms-date', function () {
-    const milestoneId = parseInt($(this).attr('data-milestoneid'));
-    const milestone = milestones.find(m => m.id === milestoneId);
-    if (milestone) {
-      const nameInput = document.querySelector(`.ms-name[data-milestoneid="${milestoneId}"]`);
-      const dateInput = document.querySelector(`.ms-date[data-milestoneid="${milestoneId}"]`);
-      const oldName = milestone.name;
-      const oldDate = milestone.date;
-      const newName = nameInput.value;
-      const newDate = dateInput.value;
-
-      // Only update if something changed
-      if (oldName !== newName || oldDate !== newDate) {
-        milestone.name = newName;
-        milestone.date = newDate;
-
-        console.log(`Milestone edited (on blur): ${newName} | ${newDate}.`);
-        showToast("Milestone updated and tasks adjusted.", "success");
-        render();
-      }
-    }
-  })
-  .on('keypress.app', '.ms-name, .ms-date', function (e) {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      $(this).blur(); // triggers the blur handler above
-    }
-  });
-
-  // this is the delete task icon event
-  $root
-  .off('click.app', '.task .delete')
-  .on('click.app', '.task .delete', function () {
-    const $task = $(this).closest('.task');
-    const taskId = parseInt($task.attr('data-itemid'), 10);
-    deleteTask(taskId);
-  });
-
-  // this is the edit task icon event (triggers modal)
-  $root
-  .off('click', '.open-task-edit-modal')
-  .on('click', '.open-task-edit-modal', function () {
-    const triggerElement = $(this);
-    const id = parseInt(triggerElement.closest('.task').attr("data-itemid"));
-    const task = tasks.find(t => t.id === id);
-    const modal = $('#taskEditModal');
-
-    modal.find('.itemName').text(task.text);
-    modal.find('#saveEditedTask').attr("data-saveitemid", id);
-
-    modal.find('#confluenceUrl').val(task['link-conf'] || "");
-    modal.find('#jiraUrl').val(task['link-jira'] || "");    
-    modal.find('#otherUrl').val(task['link-other'] || "");
-    modal.find('#taskName').val(task.text);
-    modal.find('#taskDue').val(task.due || "");
-    modal.find('#taskCategory').val(task.category || "");
-    modal.find('#taskCompleted').prop("checked", !!task.completed);
-
-    const select = modal.find('#taskMilestone');
-    select.html(`<option value="">-- Select milestone (optional) --</option>`);
-    milestones
-      .slice()
-      .sort(sortMilestonesDatedFirst) // dated first, undated last
-      .forEach(ms => {
-        const label = ms.date ? `${ms.name} (${ms.date})` : `${ms.name}`; // no parentheses ever
-        const opt = $(`<option>`).val(ms.id).text(label);
-        if (task.milestoneId == ms.id) opt.prop("selected", true);
-        select.append(opt);
-      });
-
-      // Populate Allocated To
-      const $assigned = $("#taskAssigned");
-      $assigned.empty().append(`<option value="">Unallocated</option>`);
-      // allocationOptions.forEach(opt => {
-      allocationOptions.forEach(opt => {
-        const name = opt.name;
-        const type = opt.type;
-        const label = type ? `${name} — ${type}` : name;
-        $assigned.append(
-          // `<option value="${opt}" ${task.assignedTo === opt ? "selected" : ""}>${opt}</option>`
-          `<option value="${name}" ${task.assignedTo === name ? "selected" : ""}>${label}</option>`
-        );
-      });
-
-    modal[0].showModal();
-  });
-
-  // this is the mark complete task icon event
-  $root
-  .off('click', '.task .complete')
-  .on('click', '.task .complete', function () {
-    const taskId = $(this).data("taskid");
-    const task = tasks.find(t => t.id === taskId);
-    if (!task) return;
-
-    const newState = !task.completed;
-    const verb = newState ? "Completed" : "Incomplete";
-
-    showConfirmModal(
-      `Mark task "${task.text}" as ${verb}?`,
-      () => {
-        task.completed = newState;
-        console.log(`Task '${task.text}' marked ${verb}.`);
-        render();
-      },
-      `Mark as ${verb}`
-    );
-  });
-
-  // this is the delete allocation option event on the allocation option modal
-  $root
-  .off('click.app', '#existingAllocationsList .del-allocation')
-  .on('click.app', '#existingAllocationsList .del-allocation', function () {
-    // const option = $(this).data('option');
-    // removeAllocationByName(option);
-    const option = $(this).data('option') || $(this).attr('data-option');
-    removeAllocationByName(option);
-    console.log(`Allocation option '${option}' removed.`);
-    markUnsavedChanges();
-    render();
-    updateAllocationList();
-  });
-
-  
-  // this is the save allocation option event on the allocation option modal
-  $root // BUG: THIS ISN'T WORKING AS THE FUNCTION IT USES DOESN'T EXIST
-  .off('click.app', '#existingAllocationsList .save-allocation')
-  .on('click.app', '#existingAllocationsList .save-allocation', function () {
-    const oldName = $(this).data('old') || $(this).attr('data-old');
-    const $li = $(this).closest('li');
-    const newName = ($li.find('.alloc-edit-name').val() || '').trim();
-    const newType = ($li.find('.alloc-edit-type').val() || '').trim();
-
-    if (!newName) {
-      showAlertModal("Name cannot be empty.", "Allocation Management");
-      return;
-    }
-
-    // Prevent duplicates if renaming
-    if (newName !== oldName && allocationNameExists(newName)) {
-      showAlertModal("That allocation name already exists.", "Allocation Management");
-      return;
-    }
-
-    const idx = allocationOptions.findIndex(o => o.name === oldName);
-    if (idx < 0) return;
-
-    allocationOptions[idx].name = newName;
-    allocationOptions[idx].type = newType;
-
-    // If renamed, update tasks assignedTo
-    if (newName !== oldName) {
-      renameAllocationEverywhere(oldName, newName);
-    }
-
-    markUnsavedChanges();
-    render();
-    updateAllocationList();
-  });
-
-  // this is the delete milestone event
-  $root
-  .off('click.app', '.delete-milestone')
-  .on('click.app', '.delete-milestone', function () {
-    const msId = Number($(this).data("milestoneid"));
-    const mode = String($(this).data("mode") || "unused");
-
-    if (mode === "all-complete") {
-      deleteMilestoneWhenAllComplete(msId);
-    } else {
-      // Reuse your existing path
-      deleteMilestone(msId);
-    }
-  });
-
-  // this is the toggle tentative milestone event
-  $root
-  .off('click.app', '.tentative-btn')
-  .on('click.app', '.tentative-btn', function () {
-    const id = parseInt(this.dataset.milestoneid, 10);
-    const ms = milestones.find(m => m.id === id);
-    if (ms) {       
-      ms.tentative = !ms.tentative; 
-      if (ms.tentative){ console.log(`Milestone '${ms.name}' set to tentative.`) }
-      else { console.log(`Milestone '${ms.name}' set to NOT tentative.`) }
-      render(); 
-    }
-  });
-
-  // this is the export HTML button event
-  $root
-  .off('click.app', '#exportButton')
-  .on('click.app', '#exportButton', function () {
-    clearFilters(true);
-    render();
-    $("#filtersModalBody").html("");
-    exportHTMLSummary();
-  });
-
-  // this is the about link click event
-  $root
-  .off('click.app', '#openAboutModal')
-  .on('click.app', '#openAboutModal', e => { 
-    e.preventDefault();
-    $('#aboutModal')[0].showModal();
-  });
-
-  // this is the close about modal event
-  $root
-  .off('click.app', '#closeAboutModal')
-  .on('click.app', '#closeAboutModal', function () {
-    $('#aboutModal')[0].close();
-  });
-
-  // this is the allocation options button event (shows modal)
-  $root
-  .off('click.app', '#manageAllocations')
-  .on('click.app', '#manageAllocations', function () {  
-    updateAllocationList();
-    $('#allocationModal')[0].showModal();
-  });
-
-  // this is the close allocation options modal button event
-  $root
-  .off('click.app', '#closeAllocationModal')
-  .on('click.app', '#closeAllocationModal', function () {
-    $('#allocationModal')[0].close();
-  });
-
-  // this is the add allocation option event on the allocation options modal
-  $root
-  .off('click.app', '#addAllocationOption')
-  .on('click.app', '#addAllocationOption', function () {
-    const newName = $('#newAllocationInput').val().trim();
-    const newType = ($('#newAllocationTypeInput').val() || '').trim();
-    if (!newName) return;
-
-    if (allocationNameExists(newName)) {
-      showAlertModal("That allocation already exists.", "Allocation Management");
-      return;
-    }
-
-    allocationOptions.push({ name: newName, type: newType });
-    $('#newAllocationInput').val('');
-    $('#newAllocationTypeInput').val('');
-    markUnsavedChanges();
-    render();
-    updateAllocationList();
-  });
-
-  // this is the category options button event (shows modal)
-  $root
-  .off('click.app', '#manageCategories')
-  .on('click.app', '#manageCategories', function () {
-    // updateCategoryList();
-    $('#categoryModal')[0].showModal();
-  });
-
-  // this is the close category options modal button event
-  $root
-  .off('click.app', '#closeCategoryModal')
-  .on('click.app', '#closeCategoryModal', function () {
-    $('#categoryModal')[0].close();
-  });
-
-  // this is the add category option event on the category options modal
-  $root
-  .off('click.app', '#addCategory')
-  .on('click.app', '#addCategory', function () {
-    const code = $('#newCatCode').val().trim().toUpperCase();
-    const name = $('#newCatName').val().trim() || code;
-    const color = $('#newCatColor').val();
-    if (!code || categories.some(c => c.code === code)) {
-      showAlertModal("Please provide a unique category code.", "Categories");
-      return;
-    }
-    categories.push({ code, name, color });
-    $('#newCatCode').val(''); $('#newCatName').val('');
-    render();
-  });
-
-
-  // this makes the page title editable
-  $('#pageTitle').editable('destroy');
-  $('#pageTitle').editable({
-    touch : true,
-    lineBreaks : false,
-    toggleFontSize : false, 
-    closeOnEnter : true,
-    emptyMessage : 'Title',
-    callback : function( data ) {
-      if( data.content ) { 
-        pageTitle = data.content; 
-        
-        console.log("Page title updated.")
-        render();
-      }
-      data.$el.removeAttr("data-edit-event");
-      data.$el.removeAttr("style");
-    }
-  });
-
-  // this handles dark/light mode toggling
-  if ($("html").data("theme") == "dark"){
-    $("div.theme-toggle").addClass("theme-toggle--toggled") 
-  } else { $("div.theme-toggle").removeClass("theme-toggle--toggled") }
-
-
-  // a diagnostic snippet for the event handlers
-  // document.addEventListener('click', function (e) {
-  //   console.log(
-  //     'CLICK:',
-  //     e.target,
-  //     'bubbled to',
-  //     e.currentTarget
-  //   );
-  // }, true); // <-- capture phase so we see it before bubbling
-
-});
 
