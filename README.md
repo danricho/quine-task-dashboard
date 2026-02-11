@@ -1,10 +1,10 @@
+> [!IMPORTANT]
+> As of the commit introducing this README, a major rewrite is nearing completion and will be released as **v2.0.0**.  
+> This documentation reflects the **v2.0.0 architecture and feature set**.
+
 # Quine Task Dashboard
 
 A lightweight, self-contained dashboard for managing milestones, tasks, and team priorities — delivered as a single local HTML file.
-
-> [!IMPORTANT]
-> As of the commit introducing this README, a major rewrite is nearing completion and will be released as **v2.0.0**.  
-> This documentation reflects the **v2 architecture and feature set**.
 
 ## What is a Quine?
 
@@ -17,6 +17,10 @@ The concept is named after philosopher **Willard Van Orman Quine**, and in this 
 > Coming Soon™  
 
 ## Features
+
+- Customise the project name and logo 
+- Toggleable dark/light mode
+- Toggleable side panel menu
 
 ### Milestone Management
 
@@ -102,13 +106,16 @@ The dashboard can **save itself**:
 
 ## Getting Started
 
-A minimal dataset is included to help you get up and running quickly.
+The built all-in-one HTML `/dashboard.html` uses an empty USERDATA dataset.
 
 - Included by default in the built dashboard
-- Location: `dev/data-minimal.js`
-- Purpose: Provides a small example USERDATA structure
+- Location: `dev/dataset-empty.js`
+- Purpose: Provides a USERDATA structure
 
-When I build the all‑in‑one file, I *try* to make sure this is the included data for the all-in-one HTML `/dashboard.html`.
+In `dev/data/` there are:
+
+ - `autoload-USERDATA-sample*.js` files which can be imported on load (autoloaded) by uncommenting the script src tags in the head of the dev HTML files. These should only be used for development.
+ - `USERDATA-sample*.json` files which represent sets of exported data from the tool. These can be used to import a different dataset.
 
 You can replace this data with your own via the import/export functionality or using the normal UI features.
 

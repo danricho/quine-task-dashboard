@@ -2,7 +2,7 @@ USERDATA = {
   config: { 
     title: "TITLE NOT SET",
     logo: `NO LOGO`,
-    primary_color: '#000',
+    primary_color: '#005c14',
     last_saved: "1970-01-01 00:00",
     render_read_only: false,
     force_timeline_start: null,

@@ -2,7 +2,7 @@
   "config": {
     "title": "Project - Extended Example Dataset",
     "logo": "<svg width=\"2rem\" height=\"2rem\" viewBox=\"0 0 64 64\" xmlns=\"http://www.w3.org/2000/svg\"><rect width=\"64\" height=\"64\" rx=\"10\" ry=\"10\" fill=\"currentColor\" opacity=\"0.12\"></rect></svg>",
-    "primary_color": "#3c006e",
+    "primary_color": "#00426e",
     "last_saved": "2026-01-25 09:11",
     "render_read_only": false,
     "force_timeline_start": null,
