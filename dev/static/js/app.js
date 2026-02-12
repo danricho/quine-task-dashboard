@@ -1164,7 +1164,6 @@ function deleteTask(id){
 }
 // this shows the completed task deletion alert dialog (if there is a valid date chosen)
 function askDeleteCompleteTasksBefore(){
-  clearTaskFilters();
   $("input#remove-complete-tasks-threshold-date").attr("aria-invalid", "false");
   dateStr = $("input#remove-complete-tasks-threshold-date").val();
   if (dateStr == "") { $("input#remove-complete-tasks-threshold-date").attr("aria-invalid", "true"); return false; }
