@@ -113,7 +113,7 @@
 
             <div class="py-6 text-sm border-t">
               <p><a class="text-neutral-500/75 hover:text-neutral-500 hover:underline decoration-solid cursor-pointer" data-tooltip="Quine Task Dashboard on GitHub" data-align="start" 
-                 href="https://github.com/danricho/quine-task-dashboard" target="_blank">Quine Task Dashboard <span id='version'>v2.0.2</span></a></p>
+                 href="https://github.com/danricho/quine-task-dashboard" target="_blank">Quine Task Dashboard <span id='version'>v2.0.3</span></a></p>
               <p><a class="text-neutral-500/75 hover:text-neutral-500 hover:underline decoration-solid cursor-pointer" data-tooltip="danricho on GitHub" data-align="start" 
                  href="https://github.com/danricho" target="_blank">danricho, 2026</a></p>
             </div>
@@ -587,6 +587,20 @@
               <label for="filters-string">Text filter (task name or linked-milestone name)</label>
               <input type="text" id="filters-string" />
             </div>
+
+            <div class="flex flex-col gap-2">Task (or linked-milestone) dates
+              <div class="flex gap-4">              
+                <div class="flex gap-2">              
+                  <label for="filters-after-date-input">After</label>
+                  <input type="date" id="filters-after-date-input">
+                </div>
+                <div class="flex gap-2">
+                  <label for="filters-before-date-input">Before</label>
+                  <input type="date" id="filters-before-date-input">
+                </div>            
+              </div>
+              <p class="text-muted-foreground text-sm">Note: These don't  filter-out PERPETUAL tasks</p>
+            </div>
             
           </form>  
         </section>
@@ -765,7 +779,7 @@
               <input type="color" id="dialog-configure-general-project-color" value="#333333" />
             </div>
 
-            <div class="flex flex-col gap-2">Force Milestone Dates [not implemented yet]
+            <div class="flex flex-col gap-2">Date limits in Timeline visualisations
               <div class="flex gap-4">              
                 <div class="flex gap-2">              
                   <label for="dialog-configure-general-milestone-start-date">Start</label>

@@ -294,6 +294,8 @@ def main() -> None:
     print("\nDone.")
     print("You may want to push:")
     print(f"  git push origin master && git push origin --tags")
+    print(f"You also may need to remove tags:")
+    print(f"  git tag -d <tagname> OR git push --delete <remote> <tagname>")
 
 
 if __name__ == "__main__":

@@ -6,8 +6,7 @@ let taskMap = {};             // quicker lookups of tasks from ID
 let showCompleted = false;    // enables the rendering of completed tasks
 let unsavedChanges = false;   // used to know if something has been edited and so the save button should be active and a warning on page close
 const readOnlyMode = false;
-const activeFilters = { categories: new Set(), milestones: new Set(), searchText: "" }; // tracks active filters
-
+const activeFilters = { categories: new Set(), milestones: new Set(), searchText: "", dateAfter: null, dateBefore: null }; // tracks active filters
 
 // --------------------------------------------------- //
 //  HELPER FUNCTIONS
@@ -142,6 +141,24 @@ function matchesActiveFilters(task) {
       if (ms) msName = (ms.name || "").toLowerCase();
     }
     if (!taskText.includes(needle) && !msName.includes(needle)) return false;
+  }
+
+  if (activeFilters.dateAfter) {
+    // perpetual (including linked milestones aren't filtered out)
+    if (task.milestoneId) { // driven by milestone
+      const ms = milestoneFromId(task.milestoneId);
+      if (ms) { if (ms.date && ms.date < activeFilters.dateAfter) { return false } } // milestone date exists and is before minimum date 
+    } 
+    else if (task.date && task.date < activeFilters.dateAfter) { return false } // direct date exists and is before minimum date
+  }
+
+  if (activeFilters.dateBefore) {
+    // perpetual (including linked milestones aren't filtered out)
+    if (task.milestoneId) { // driven by milestone
+      const ms = milestoneFromId(task.milestoneId);
+      if (ms) { if (ms.date && ms.date > activeFilters.dateBefore) { return false } } // milestone date exists and is after maximum date 
+    } 
+    else if (task.date && task.date > activeFilters.dateBefore) { return false } // direct date exists and is after maximum date
   }
 
   return true;
@@ -335,6 +352,16 @@ function renderActiveFilterStringAndButtonState() {
       return ms ? ms.name : `Milestone ${idStr}`;
     });
     parts.push(`Milestone in [ ${names.join(", ")} ]`);
+  }
+
+  if (activeFilters.dateAfter && !activeFilters.dateBefore){
+    parts.push(`Task (or Milestone) date after or on '${activeFilters.dateAfter}'`);
+  }
+  else if (activeFilters.dateBefore && !activeFilters.dateAfter){
+    parts.push(`Task (or Milestone) date before or on '${activeFilters.dateBefore}'`);
+  }
+  else if (activeFilters.dateBefore && activeFilters.dateAfter){
+    parts.push(`Task (or Milestone) date between or on '${activeFilters.dateAfter}' and '${activeFilters.dateBefore}'`);
   }
 
   if (parts.length === 0) {
@@ -662,7 +689,7 @@ function renderMilestoneTimeline() {
   host.style.display = "";
 
   // Map your milestone objects to what d3-milestones expects (timestamp + text)
-  const data = dated.map(m => ({
+  let data = dated.map(m => ({
     date: m.date,                 // keep original string
     title: m.name,                // keep label
     bulletStyle: m.tentative ? {
@@ -693,6 +720,23 @@ function renderMilestoneTimeline() {
 
   // keep timeline ordered
   data.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+  if (USERDATA.config.force_timeline_start) {
+    data = data.filter(m => m.date >= USERDATA.config.force_timeline_start);
+    data.unshift({
+      date: USERDATA.config.force_timeline_start,
+      title: "Timeline Start",
+      textStyle: { "opacity": "0.5" }
+    })
+  }
+  if (USERDATA.config.force_timeline_end) {
+    data = data.filter(m => m.date <= USERDATA.config.force_timeline_end);
+    data.push({
+      date: USERDATA.config.force_timeline_end,
+      title: "Timeline End",
+      textStyle: { "opacity": "0.5" }
+    })
+  }
 
   console.log("TIMELINE: Rendering Milestone timeline.")
   renderTimeline("section#milestones #milestoneTimeline", data, function () {
@@ -874,7 +918,7 @@ function renderTasksTimeline(name) {
   host.style.display = "";
 
   // Map your objects to what d3-milestones expects (timestamp + text)
-  const data = dated.map(m => ({
+  let data = dated.map(m => ({
     date: m.derivedDate,
     title: m.text,
     textStyle: m.color ? {
@@ -899,6 +943,23 @@ function renderTasksTimeline(name) {
   // keep timeline ordered
   data.sort((a, b) => new Date(a.date) - new Date(b.date));
   
+  if (USERDATA.config.force_timeline_start) {
+    data = data.filter(m => m.date >= USERDATA.config.force_timeline_start);
+    data.unshift({
+      date: USERDATA.config.force_timeline_start,
+      title: "Timeline Start",
+      textStyle: { "opacity": "0.5" }
+    })
+  }
+  if (USERDATA.config.force_timeline_end) {
+    data = data.filter(m => m.date <= USERDATA.config.force_timeline_end);
+    data.push({
+      date: USERDATA.config.force_timeline_end,
+      title: "Timeline End",
+      textStyle: { "opacity": "0.5" }
+    })
+  }
+
   console.log(`TIMELINE: Rendering resource '${name}' timeline.`)
   renderTimeline(`#dialog-task-timeline .timeline-holder`, data, function () {
     $(".milestones-text-label").filter(function () {
@@ -1194,6 +1255,8 @@ function showResourceTimeline(name){
 function clearTaskFilters() {
   activeFilters.categories.clear();
   activeFilters.milestones.clear();
+  activeFilters.dateBefore = null;
+  activeFilters.dateAfter = null;
   activeFilters.searchText = "";
   var currentUnsavedChanges = unsavedChanges;
   updatePage();
@@ -1210,6 +1273,11 @@ function applyFilters(){
     activeFilters.milestones.add(item);
   }
   activeFilters.searchText = $("#dialog-configure-task-filters #filters-string").val();  
+  activeFilters.dateAfter = $("#dialog-configure-task-filters #filters-after-date-input").val();  
+  if (activeFilters.dateAfter == "") activeFilters.dateAfter = null;
+  activeFilters.dateBefore = $("#dialog-configure-task-filters #filters-before-date-input").val();  
+  if (activeFilters.dateBefore == "") activeFilters.dateBefore = null;
+
   var currentUnsavedChanges = unsavedChanges;
   updatePage();
   setChangesPresent(currentUnsavedChanges);
@@ -1219,6 +1287,8 @@ function setupAndShowFiltersModal(){
   $("#dialog-configure-task-filters .select-multiple-categories").get(0).value = [...activeFilters.categories];
   $("#dialog-configure-task-filters .select-multiple-milestones").get(0).value = [...activeFilters.milestones];
   $("#dialog-configure-task-filters #filters-string").val(activeFilters.searchText);
+  $("#dialog-configure-task-filters #filters-before-date-input").val(activeFilters.dateBefore);
+  $("#dialog-configure-task-filters #filters-after-date-input").val(activeFilters.dateAfter);
   $('#dialog-configure-task-filters').get(0).showModal();
 }
 // this sets up and shows the configure resources modal

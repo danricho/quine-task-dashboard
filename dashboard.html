@@ -26,7 +26,7 @@
     <!-- <script src="data/autoload-USERDATA-sample-small.js"></script> -->
     <!-- <script src="data/autoload-USERDATA-sample-extended.js"></script> -->
 
-    <script>let scrollPos=0;let milestoneMap={};let categoryMap={};let resourceMap={};let taskMap={};let showCompleted=false;let unsavedChanges=false;const readOnlyMode=false;const activeFilters={categories:new Set(),milestones:new Set(),searchText:""};function isPastDate(dateStr){const today=new Date();today.setHours(23,59,59,999);const due=new Date(dateStr);return due<today;}
+    <script>let scrollPos=0;let milestoneMap={};let categoryMap={};let resourceMap={};let taskMap={};let showCompleted=false;let unsavedChanges=false;const readOnlyMode=false;const activeFilters={categories:new Set(),milestones:new Set(),searchText:"",dateAfter:null,dateBefore:null};function isPastDate(dateStr){const today=new Date();today.setHours(23,59,59,999);const due=new Date(dateStr);return due<today;}
 function isSoon(dateStr){const today=new Date();today.setHours(23,59,59,999);const due=new Date(dateStr);return(due-today)/1000<=((USERDATA.config.soon_duration||7)*24*60*60);}
 function todayYMD(){const d=new Date();const yyyy=d.getFullYear();const mm=String(d.getMonth()+1).padStart(2,"0");const dd=String(d.getDate()).padStart(2,"0");return`${yyyy}-${mm}-${dd}`;}
 function createHtmlIdFromString(str){return String(str).toLowerCase().replaceAll(" ","-").replaceAll("(","").replaceAll(",","").replaceAll(")","").replaceAll(":","");}
@@ -47,6 +47,10 @@ function matchesActiveFilters(task){if(activeFilters.categories.size>0){if(!task
 if(activeFilters.milestones.size>0){const matchesMs=activeFilters.milestones.has(String(task.milestoneId));if(!matchesMs)return false;}
 if(activeFilters.searchText&&activeFilters.searchText.trim()!==""){const needle=activeFilters.searchText.trim().toLowerCase();const taskText=(task.text||"").toLowerCase();let msName="";if(task.milestoneId){const ms=milestoneMap[task.milestoneId];if(ms)msName=(ms.name||"").toLowerCase();}
 if(!taskText.includes(needle)&&!msName.includes(needle))return false;}
+if(activeFilters.dateAfter){if(task.milestoneId){const ms=milestoneFromId(task.milestoneId);if(ms){if(ms.date&&ms.date<activeFilters.dateAfter){return false}}}
+else if(task.date&&task.date<activeFilters.dateAfter){return false}}
+if(activeFilters.dateBefore){if(task.milestoneId){const ms=milestoneFromId(task.milestoneId);if(ms){if(ms.date&&ms.date>activeFilters.dateBefore){return false}}}
+else if(task.date&&task.date>activeFilters.dateBefore){return false}}
 return true;}
 function exportUserData(filename="USERDATA.json"){try{const jsonString=JSON.stringify(USERDATA,null,2);const blob=new Blob([jsonString],{type:"application/json"});const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download=filename;document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);console.log("USERDATA exported");showToast('success','USERDATA Exported',"Data was saved to the JSON file.");}catch(err){console.error("Export failed:",err);}}
 function importUserData(){return new Promise((resolve,reject)=>{const input=document.createElement("input");input.type="file";input.accept="application/json";input.onchange=(event)=>{const file=event.target.files[0];if(!file){reject("No file selected");return;}
@@ -67,6 +71,9 @@ USERDATA.milestones.forEach(m=>{optionsArr.push($('<div>',{role:"option","data-v
 function renderActiveFilterStringAndButtonState(){const parts=[];if(String(activeFilters.searchText).trim()!==""){parts.push(`Contains "${String(activeFilters.searchText).trim()}"`);}
 if(activeFilters.categories.size>0){const names=[...activeFilters.categories].map(code=>{const c=categoryMap[code];return c?c.name:code;});parts.push(`Category in [ ${names.join(", ")} ]`);}
 if(activeFilters.milestones.size>0){const names=[...activeFilters.milestones].map(idStr=>{const ms=milestoneMap[Number(idStr)];return ms?ms.name:`Milestone ${idStr}`;});parts.push(`Milestone in [ ${names.join(", ")} ]`);}
+if(activeFilters.dateAfter&&!activeFilters.dateBefore){parts.push(`Task (or Milestone) date after or on '${activeFilters.dateAfter}'`);}
+else if(activeFilters.dateBefore&&!activeFilters.dateAfter){parts.push(`Task (or Milestone) date before or on '${activeFilters.dateBefore}'`);}
+else if(activeFilters.dateBefore&&activeFilters.dateAfter){parts.push(`Task (or Milestone) date between or on '${activeFilters.dateAfter}' and '${activeFilters.dateBefore}'`);}
 if(parts.length===0){$("#active-filter-string").parent().addClass("hidden");$("button#button-filter-clear").prop("disabled",true).addClass("btn-secondary").removeClass("btn-primary");$("#active-filter-string").html("No active filters. Showing all tasks.");}else{$("#active-filter-string").parent().removeClass("hidden");$("button#button-filter-clear").prop("disabled",false).addClass("btn-primary").removeClass("btn-secondary");$("#active-filter-string").html("<strong>Active task filters:</strong> "+parts.join(" AND "));}}
 function showToast(cat,title,description){console.log("TOAST:",$("<div>").html(description).text());document.dispatchEvent(new CustomEvent('basecoat:toast',{detail:{config:{category:cat,title:title,description:description}}}));}
 function updatePage(){console.log("EVENT: Page update triggered")
@@ -100,8 +107,10 @@ return taskDiv}
 function renderMilestoneList(){$("#ms-title .count").text(USERDATA.milestones.length);milestoneArr=[];USERDATA.milestones.sort((a,b)=>{if(!a.date&&!b.date)return 0;if(!a.date)return 1;if(!b.date)return-1;return new Date(a.date)-new Date(b.date);}).forEach(ms=>{milestoneArr.push(createMilestoneElement(ms));})
 $("section#milestones #milestone-list").append(milestoneArr);}
 function renderMilestoneTimeline(){const host=document.getElementById("milestoneTimeline");if(!host)return;const dated=USERDATA.milestones.filter(m=>m&&m.date).slice().sort((a,b)=>new Date(a.date)-new Date(b.date));if(dated.length===0){host.innerHTML="";host.style.display="none";return;}
-host.style.display="";const data=dated.map(m=>({date:m.date,title:m.name,bulletStyle:m.tentative?{"border-color":"var(--foreground);","opacity":"0.5"}:undefined,textStyle:m.tentative?{"color":"var(--foreground);","border-color":"var(--foreground);","opacity":"0.5","font-style":"italic"}:undefined}));const today=todayYMD();const hasToday=data.some(d=>d.date===today&&d.title==="Today");if(!hasToday){data.push({date:today,title:"Today",textStyle:{"color":"red"}});}
-data.sort((a,b)=>new Date(a.date)-new Date(b.date));console.log("TIMELINE: Rendering Milestone timeline.")
+host.style.display="";let data=dated.map(m=>({date:m.date,title:m.name,bulletStyle:m.tentative?{"border-color":"var(--foreground);","opacity":"0.5"}:undefined,textStyle:m.tentative?{"color":"var(--foreground);","border-color":"var(--foreground);","opacity":"0.5","font-style":"italic"}:undefined}));const today=todayYMD();const hasToday=data.some(d=>d.date===today&&d.title==="Today");if(!hasToday){data.push({date:today,title:"Today",textStyle:{"color":"red"}});}
+data.sort((a,b)=>new Date(a.date)-new Date(b.date));if(USERDATA.config.force_timeline_start){data=data.filter(m=>m.date>=USERDATA.config.force_timeline_start);data.unshift({date:USERDATA.config.force_timeline_start,title:"Timeline Start",textStyle:{"opacity":"0.5"}})}
+if(USERDATA.config.force_timeline_end){data=data.filter(m=>m.date<=USERDATA.config.force_timeline_end);data.push({date:USERDATA.config.force_timeline_end,title:"Timeline End",textStyle:{"opacity":"0.5"}})}
+console.log("TIMELINE: Rendering Milestone timeline.")
 renderTimeline("section#milestones #milestoneTimeline",data,function(){$(".milestones-text-label").filter(function(){return $.trim($(this).text())==="Today";}).parent().parent().parent().parent().addClass("milestone-vis-today");});}
 function addRemoveDropzones(){$(".task-list").each(function(){$(this).find('.task-dropzone').remove();if(!$(this).children().length){template=document.getElementById('template-task-dropzone');clone=template.content.cloneNode(true);$(clone).find('.task-dropzone').appendTo(this);}});}
 function renderResources(){let resourceArr=[]
@@ -126,8 +135,10 @@ function renderTasksTimeline(name){host=$('#dialog-task-timeline .timeline-holde
 taskData=taskData.filter(matchesActiveFilters).sort((a,b)=>(a.priority??9999)-(b.priority??9999));taskData.forEach(task=>{task.derivedDate=null;if(task.milestoneId){const ms=milestoneFromId(task.milestoneId);if(ms){if(ms.date!=""){task.derivedDate=ms.date;}}}else if(task.date){task.derivedDate=task.date;}
 task.color=colorFromCategoryCode(task.category)})
 const dated=taskData.filter(t=>t&&t.derivedDate!=null).sort((a,b)=>new Date(a.derivedDate)-new Date(b.derivedDate));if(dated.length===0){host.innerHTML="";host.style.display="none";return;}
-host.style.display="";const data=dated.map(m=>({date:m.derivedDate,title:m.text,textStyle:m.color?{"color":m.color}:undefined}));const today=todayYMD();const hasToday=data.some(d=>d.date===today&&d.title==="Today");if(!hasToday){data.push({date:today,title:"Today",textStyle:{"color":"red"}});}
-data.sort((a,b)=>new Date(a.date)-new Date(b.date));console.log(`TIMELINE: Rendering resource '${name}' timeline.`)
+host.style.display="";let data=dated.map(m=>({date:m.derivedDate,title:m.text,textStyle:m.color?{"color":m.color}:undefined}));const today=todayYMD();const hasToday=data.some(d=>d.date===today&&d.title==="Today");if(!hasToday){data.push({date:today,title:"Today",textStyle:{"color":"red"}});}
+data.sort((a,b)=>new Date(a.date)-new Date(b.date));if(USERDATA.config.force_timeline_start){data=data.filter(m=>m.date>=USERDATA.config.force_timeline_start);data.unshift({date:USERDATA.config.force_timeline_start,title:"Timeline Start",textStyle:{"opacity":"0.5"}})}
+if(USERDATA.config.force_timeline_end){data=data.filter(m=>m.date<=USERDATA.config.force_timeline_end);data.push({date:USERDATA.config.force_timeline_end,title:"Timeline End",textStyle:{"opacity":"0.5"}})}
+console.log(`TIMELINE: Rendering resource '${name}' timeline.`)
 renderTimeline(`#dialog-task-timeline .timeline-holder`,data,function(){$(".milestones-text-label").filter(function(){return $.trim($(this).text())==="Today";}).parent().parent().parent().parent().addClass("milestone-vis-today");});}
 function enableDragging(){if(window.sortableInstances)window.sortableInstances.forEach(s=>s.destroy());window.sortableInstances=[];$('.task-list').each(function(index,taskList){const sAlloc=new Sortable(taskList,{group:{name:'alloc'},animation:150,direction:'vertical',swapThreshold:0.9,invertSwap:false,draggable:'.task',filter:'.task-dropzone',preventOnFilter:true,onEnd(evt){const toList=$(evt.to);const fromList=$(evt.from);const toResource=toList.attr("data-resource");const fromResource=fromList.attr("data-resource");const taskId=Number(evt.item.dataset.itemid);const task=USERDATA.tasks.find(t=>t.id===taskId);if(task&&taskId!==-1){if(toResource=="Unallocated"){task.assignedTo=null;}else{task.assignedTo=toResource;}}
 toastMessage=null;if(toResource==fromResource){}else if(taskId!==-1){toastMessage=`<strong>${task.text}</strong> was re-allocated to <strong>${toResource}</strong>.`;}
@@ -176,11 +187,11 @@ function askDeleteCompleteTasksBefore(){$("input#remove-complete-tasks-threshold
 $("#alert-delete-completed-tasks-date").text(dateStr);document.getElementById('alert-delete-completed-tasks').showModal();}
 function deleteCompleteTasksBefore(){ymd=$("input#remove-complete-tasks-threshold-date").val();USERDATA.tasks=USERDATA.tasks.filter(t=>{if(!t.completed)return true;return t.completed.localeCompare(ymd)>=0;});$("input#remove-complete-tasks-threshold-date").val("");showToast('success','Tasks Deleted',`Completed tasks before <strong>${ymd}</strong> are now deleted.`);updatePage();}
 function showResourceTimeline(name){$('#dialog-task-resource-name').text(name);$('#dialog-task-timeline .timeline-holder').html('');renderTasksTimeline(name);$('#dialog-task-timeline').get(0).showModal();}
-function clearTaskFilters(){activeFilters.categories.clear();activeFilters.milestones.clear();activeFilters.searchText="";var currentUnsavedChanges=unsavedChanges;updatePage();setChangesPresent(currentUnsavedChanges);}
+function clearTaskFilters(){activeFilters.categories.clear();activeFilters.milestones.clear();activeFilters.dateBefore=null;activeFilters.dateAfter=null;activeFilters.searchText="";var currentUnsavedChanges=unsavedChanges;updatePage();setChangesPresent(currentUnsavedChanges);}
 function applyFilters(){activeFilters.categories.clear();for(const item of $("#dialog-configure-task-filters .select-multiple-categories").get(0).value){activeFilters.categories.add(item);}
 activeFilters.milestones.clear();for(const item of $("#dialog-configure-task-filters .select-multiple-milestones").get(0).value){activeFilters.milestones.add(item);}
-activeFilters.searchText=$("#dialog-configure-task-filters #filters-string").val();var currentUnsavedChanges=unsavedChanges;updatePage();setChangesPresent(currentUnsavedChanges);}
-function setupAndShowFiltersModal(){$("#dialog-configure-task-filters .select-multiple-categories").get(0).value=[...activeFilters.categories];$("#dialog-configure-task-filters .select-multiple-milestones").get(0).value=[...activeFilters.milestones];$("#dialog-configure-task-filters #filters-string").val(activeFilters.searchText);$('#dialog-configure-task-filters').get(0).showModal();}
+activeFilters.searchText=$("#dialog-configure-task-filters #filters-string").val();activeFilters.dateAfter=$("#dialog-configure-task-filters #filters-after-date-input").val();if(activeFilters.dateAfter=="")activeFilters.dateAfter=null;activeFilters.dateBefore=$("#dialog-configure-task-filters #filters-before-date-input").val();if(activeFilters.dateBefore=="")activeFilters.dateBefore=null;var currentUnsavedChanges=unsavedChanges;updatePage();setChangesPresent(currentUnsavedChanges);}
+function setupAndShowFiltersModal(){$("#dialog-configure-task-filters .select-multiple-categories").get(0).value=[...activeFilters.categories];$("#dialog-configure-task-filters .select-multiple-milestones").get(0).value=[...activeFilters.milestones];$("#dialog-configure-task-filters #filters-string").val(activeFilters.searchText);$("#dialog-configure-task-filters #filters-before-date-input").val(activeFilters.dateBefore);$("#dialog-configure-task-filters #filters-after-date-input").val(activeFilters.dateAfter);$('#dialog-configure-task-filters').get(0).showModal();}
 function setupResourcesModal(){tmplt=$('#dialog-configure-resources .editable-resource-entry.hidden')
 $(tmplt).parent().find(".editable-resource-entry:not(.hidden)").remove();USERDATA.resources.forEach(r=>{resDiv=tmplt.clone().removeClass("hidden")
 resDiv.attr("data-name",r.name)
@@ -333,7 +344,7 @@ const blob=new Blob([div[0].innerHTML],{type:"text/html"});const data=[new Clipb
 
             <div class="py-6 text-sm border-t">
               <p><a class="text-neutral-500/75 hover:text-neutral-500 hover:underline decoration-solid cursor-pointer" data-tooltip="Quine Task Dashboard on GitHub" data-align="start" 
-                 href="https://github.com/danricho/quine-task-dashboard" target="_blank">Quine Task Dashboard <span id='version'>v2.0.2</span></a></p>
+                 href="https://github.com/danricho/quine-task-dashboard" target="_blank">Quine Task Dashboard <span id='version'>v2.0.3</span></a></p>
               <p><a class="text-neutral-500/75 hover:text-neutral-500 hover:underline decoration-solid cursor-pointer" data-tooltip="danricho on GitHub" data-align="start" 
                  href="https://github.com/danricho" target="_blank">danricho, 2026</a></p>
             </div>
@@ -807,6 +818,20 @@ const blob=new Blob([div[0].innerHTML],{type:"text/html"});const data=[new Clipb
               <label for="filters-string">Text filter (task name or linked-milestone name)</label>
               <input type="text" id="filters-string" />
             </div>
+
+            <div class="flex flex-col gap-2">Task (or linked-milestone) dates
+              <div class="flex gap-4">              
+                <div class="flex gap-2">              
+                  <label for="filters-after-date-input">After</label>
+                  <input type="date" id="filters-after-date-input">
+                </div>
+                <div class="flex gap-2">
+                  <label for="filters-before-date-input">Before</label>
+                  <input type="date" id="filters-before-date-input">
+                </div>            
+              </div>
+              <p class="text-muted-foreground text-sm">Note: These don't  filter-out PERPETUAL tasks</p>
+            </div>
             
           </form>  
         </section>
@@ -985,7 +1010,7 @@ const blob=new Blob([div[0].innerHTML],{type:"text/html"});const data=[new Clipb
               <input type="color" id="dialog-configure-general-project-color" value="#333333" />
             </div>
 
-            <div class="flex flex-col gap-2">Force Milestone Dates [not implemented yet]
+            <div class="flex flex-col gap-2">Date limits in Timeline visualisations
               <div class="flex gap-4">              
                 <div class="flex gap-2">              
                   <label for="dialog-configure-general-milestone-start-date">Start</label>
