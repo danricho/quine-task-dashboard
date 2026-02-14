@@ -1559,8 +1559,8 @@ function quineSavePage(readonly=false) {
   clearTaskFilters();
   sanitizeDOM();
   $("details#allocations-menu").prop("open", true);
-  $("details#configurations-menu").prop("open", true);
-  $("#milestones-tab-2").click();
+  $("details#configurations-menu").prop("open", false);
+  $("#milestones-tab-2").click().parent().parent().removeAttr("data-tabs-initialized");
   $(".toast").remove();
 
   USERDATA.config.last_saved = nowString();
