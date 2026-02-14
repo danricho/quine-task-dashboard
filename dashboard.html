@@ -60,7 +60,7 @@ $("button#button-save-read-only").prop("disabled",changes)
 $("button#button-export-clipboard").prop("disabled",changes)
 if(changes){$("button#button-save").addClass("btn-primary ").removeClass("btn-secondary")}else{$("button#button-save").addClass("btn-secondary").removeClass("btn-primary ")}
 unsavedChanges=changes;}
-function sanitizeDOM(){$(".count").text("X");$("#milestone-list").html("");$("#allocations-list").html("");$("#completed-task-list").html("");$("#milestoneTimeline").html("");$("#dialog-task-timeline .timeline-holder").html("");$("#menu-allocations-list").html("");$(document).prop('title',"Project Title");$("#heading-title").text("Project Title");$("#heading-logo").html("");$('head').find('link[rel="icon"], link[rel="shortcut icon"]').remove();$('select:not(.preserve)').html("");$('#alert-delete-task-name, #alert-complete-task-name').text("");$('input').val("");$('textarea').val("");cln=$('.select-multiple-categories').clone().removeAttr("data-select-initialized");cln.find('[role="listbox"]').html("");$('.select-multiple-categories').replaceWith(cln);cln=$('.select-multiple-milestones').clone().removeAttr("data-select-initialized");cln.find('[role="listbox"]').html("");$('.select-multiple-milestones').replaceWith(cln);$('#last-saved').text("");$(".editable-resource-entry:not(.hidden)").remove();$(".editable-category-entry:not(.hidden)").remove();$('button.show-completed-tasks').text("Show Completed Task List");$("#old-task-deletion-group").addClass("hidden");$("#active-filter-string").html("");}
+function sanitizeDOM(){$(".count").text("X");$("#milestone-list").html("");$("#allocations-list").html("");$("#completed-task-list").html("");$("#milestoneTimeline").html("");$("#milestoneTimelineNote").html("");$("#dialog-task-timeline .timeline-holder").html("");$("#dialog-task-timeline .timeline-holderNote").html("");$("#menu-allocations-list").html("");$(document).prop('title',"Project Title");$("#heading-title").text("Project Title");$("#heading-logo").html("");$('head').find('link[rel="icon"], link[rel="shortcut icon"]').remove();$('select:not(.preserve)').html("");$('#alert-delete-task-name, #alert-complete-task-name').text("");$('input').val("");$('textarea').val("");cln=$('.select-multiple-categories').clone().removeAttr("data-select-initialized");cln.find('[role="listbox"]').html("");$('.select-multiple-categories').replaceWith(cln);cln=$('.select-multiple-milestones').clone().removeAttr("data-select-initialized");cln.find('[role="listbox"]').html("");$('.select-multiple-milestones').replaceWith(cln);$('#last-saved').text("");$(".editable-resource-entry:not(.hidden)").remove();$(".editable-category-entry:not(.hidden)").remove();$('button.show-completed-tasks').text("Show Completed Task List");$("#old-task-deletion-group").addClass("hidden");$("#active-filter-string").html("");}
 function renderTimeline(selector,data,callbackfn){return window.milestonesViz(selector).mapping({timestamp:"date",text:"title"}).parseTime("%Y-%m-%d").aggregateBy('day').labelFormat("%b %d").optimize(true).render(data).renderCallback(callbackfn);}
 function renderDropdowns(){let optionsArr=[]
 USERDATA.resources.forEach(r=>{optionsArr.push($('<option>',{value:r.name}).text(`${r.name} - ${r.type}`))});optionsArr.push($('<option>',{value:""}).text("- UNALLOCATED -"));$('select.select-resources').html("").append(optionsArr);optionsArr=[]
@@ -111,7 +111,9 @@ host.style.display="";let data=dated.map(m=>({date:m.date,title:m.name,bulletSty
 data.sort((a,b)=>new Date(a.date)-new Date(b.date));if(USERDATA.config.force_timeline_start){data=data.filter(m=>m.date>=USERDATA.config.force_timeline_start);data.unshift({date:USERDATA.config.force_timeline_start,title:"Timeline Start",textStyle:{"opacity":"0.5"}})}
 if(USERDATA.config.force_timeline_end){data=data.filter(m=>m.date<=USERDATA.config.force_timeline_end);data.push({date:USERDATA.config.force_timeline_end,title:"Timeline End",textStyle:{"opacity":"0.5"}})}
 console.log("TIMELINE: Rendering Milestone timeline.")
-renderTimeline("section#milestones #milestoneTimeline",data,function(){$(".milestones-text-label").filter(function(){return $.trim($(this).text())==="Today";}).parent().parent().parent().parent().addClass("milestone-vis-today");});}
+renderTimeline("section#milestones #milestoneTimeline",data,function(){$(".milestones-text-label").filter(function(){return $.trim($(this).text())==="Today";}).parent().parent().parent().parent().addClass("milestone-vis-today");});if(USERDATA.config.force_timeline_start&&USERDATA.config.force_timeline_end){$("#milestoneTimelineNote").text(`Timeline limited to dates on or after '${USERDATA.config.force_timeline_start}' and on or before '${USERDATA.config.force_timeline_end}'. Change this setting in General Configuration.`)}
+else if(USERDATA.config.force_timeline_start){$("#milestoneTimelineNote").text(`Timeline limited to dates on or after '${USERDATA.config.force_timeline_start}'. Change this setting in General Configuration.`)}
+else if(USERDATA.config.force_timeline_end){$("#milestoneTimelineNote").text(`Timeline limited to dates on or before '${USERDATA.config.force_timeline_end}'. Change this setting in General Configuration.`)}}
 function addRemoveDropzones(){$(".task-list").each(function(){$(this).find('.task-dropzone').remove();if(!$(this).children().length){template=document.getElementById('template-task-dropzone');clone=template.content.cloneNode(true);$(clone).find('.task-dropzone').appendTo(this);}});}
 function renderResources(){let resourceArr=[]
 $("#alloc-title .count").text(USERDATA.tasks.filter(t=>!t.completed).filter(matchesActiveFilters).length);[...USERDATA.resources,{"name":"Unallocated","type":""}].forEach(resource=>{if(resource.name=="Unallocated"){assignedTasks=USERDATA.tasks.filter(t=>!t.completed).filter(t=>(t.assignedTo===null))}else{assignedTasks=USERDATA.tasks.filter(t=>!t.completed).filter(t=>(t.assignedTo===resource.name))}
@@ -139,7 +141,9 @@ host.style.display="";let data=dated.map(m=>({date:m.derivedDate,title:m.text,te
 data.sort((a,b)=>new Date(a.date)-new Date(b.date));if(USERDATA.config.force_timeline_start){data=data.filter(m=>m.date>=USERDATA.config.force_timeline_start);data.unshift({date:USERDATA.config.force_timeline_start,title:"Timeline Start",textStyle:{"opacity":"0.5"}})}
 if(USERDATA.config.force_timeline_end){data=data.filter(m=>m.date<=USERDATA.config.force_timeline_end);data.push({date:USERDATA.config.force_timeline_end,title:"Timeline End",textStyle:{"opacity":"0.5"}})}
 console.log(`TIMELINE: Rendering resource '${name}' timeline.`)
-renderTimeline(`#dialog-task-timeline .timeline-holder`,data,function(){$(".milestones-text-label").filter(function(){return $.trim($(this).text())==="Today";}).parent().parent().parent().parent().addClass("milestone-vis-today");});}
+renderTimeline(`#dialog-task-timeline .timeline-holder`,data,function(){$(".milestones-text-label").filter(function(){return $.trim($(this).text())==="Today";}).parent().parent().parent().parent().addClass("milestone-vis-today");});if(USERDATA.config.force_timeline_start&&USERDATA.config.force_timeline_end){$(".timeline-holderNote").text(`Timeline limited to dates on or after '${USERDATA.config.force_timeline_start}' and on or before '${USERDATA.config.force_timeline_end}'. Change this setting in General Configuration.`)}
+else if(USERDATA.config.force_timeline_start){$(".timeline-holderNote").text(`Timeline limited to dates on or after '${USERDATA.config.force_timeline_start}'. Change this setting in General Configuration.`)}
+else if(USERDATA.config.force_timeline_end){$(".timeline-holderNote").text(`Timeline limited to dates on or before '${USERDATA.config.force_timeline_end}'. Change this setting in General Configuration.`)}}
 function enableDragging(){if(window.sortableInstances)window.sortableInstances.forEach(s=>s.destroy());window.sortableInstances=[];$('.task-list').each(function(index,taskList){const sAlloc=new Sortable(taskList,{group:{name:'alloc'},animation:150,direction:'vertical',swapThreshold:0.9,invertSwap:false,draggable:'.task',filter:'.task-dropzone',preventOnFilter:true,onEnd(evt){const toList=$(evt.to);const fromList=$(evt.from);const toResource=toList.attr("data-resource");const fromResource=fromList.attr("data-resource");const taskId=Number(evt.item.dataset.itemid);const task=USERDATA.tasks.find(t=>t.id===taskId);if(task&&taskId!==-1){if(toResource=="Unallocated"){task.assignedTo=null;}else{task.assignedTo=toResource;}}
 toastMessage=null;if(toResource==fromResource){}else if(taskId!==-1){toastMessage=`<strong>${task.text}</strong> was re-allocated to <strong>${toResource}</strong>.`;}
 if(toastMessage){showToast('success','Task Moved',toastMessage);}
@@ -344,7 +348,7 @@ const blob=new Blob([div[0].innerHTML],{type:"text/html"});const data=[new Clipb
 
             <div class="py-6 text-sm border-t">
               <p><a class="text-neutral-500/75 hover:text-neutral-500 hover:underline decoration-solid cursor-pointer" data-tooltip="Quine Task Dashboard on GitHub" data-align="start" 
-                 href="https://github.com/danricho/quine-task-dashboard" target="_blank">Quine Task Dashboard <span id='version'>v2.0.3</span></a></p>
+                 href="https://github.com/danricho/quine-task-dashboard" target="_blank">Quine Task Dashboard <span id='version'>v2.0.4</span></a></p>
               <p><a class="text-neutral-500/75 hover:text-neutral-500 hover:underline decoration-solid cursor-pointer" data-tooltip="danricho on GitHub" data-align="start" 
                  href="https://github.com/danricho" target="_blank">danricho, 2026</a></p>
             </div>
@@ -399,6 +403,7 @@ const blob=new Blob([div[0].innerHTML],{type:"text/html"});const data=[new Clipb
                 <section class="my-2">
                   <div>
                     <div id="milestoneTimeline" style="position: relative;"></div>
+                    <div id="milestoneTimelineNote" class="text-sm text-red-600"></div>
                   </div>
                 </section>
               </div>
@@ -758,6 +763,7 @@ const blob=new Blob([div[0].innerHTML],{type:"text/html"});const data=[new Clipb
 
         <section class="my-4">
           <div class="timeline-holder"></div>
+          <div class="timeline-holderNote text-sm text-red-600"></div>
         </section>
 
         <footer>

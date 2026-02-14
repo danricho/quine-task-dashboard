@@ -243,7 +243,9 @@ function sanitizeDOM(){
   $("#allocations-list").html("");
   $("#completed-task-list").html("");
   $("#milestoneTimeline").html("");
+  $("#milestoneTimelineNote").html("");
   $("#dialog-task-timeline .timeline-holder").html("");
+  $("#dialog-task-timeline .timeline-holderNote").html("");
   $("#menu-allocations-list").html("");
   $(document).prop('title', "Project Title");
   $("#heading-title").text("Project Title");
@@ -744,6 +746,15 @@ function renderMilestoneTimeline() {
       return $.trim($(this).text()) === "Today";
     }).parent().parent().parent().parent().addClass("milestone-vis-today");
   });
+  if (USERDATA.config.force_timeline_start && USERDATA.config.force_timeline_end) { 
+    $("#milestoneTimelineNote").text(`Timeline limited to dates on or after '${USERDATA.config.force_timeline_start}' and on or before '${USERDATA.config.force_timeline_end}'. Change this setting in General Configuration.`) 
+  }
+  else if (USERDATA.config.force_timeline_start) {
+    $("#milestoneTimelineNote").text(`Timeline limited to dates on or after '${USERDATA.config.force_timeline_start}'. Change this setting in General Configuration.`)  
+  }
+  else if (USERDATA.config.force_timeline_end) { 
+    $("#milestoneTimelineNote").text(`Timeline limited to dates on or before '${USERDATA.config.force_timeline_end}'. Change this setting in General Configuration.`)  
+  }
 
 }
 
@@ -966,6 +977,16 @@ function renderTasksTimeline(name) {
       return $.trim($(this).text()) === "Today";
     }).parent().parent().parent().parent().addClass("milestone-vis-today");
   });
+  if (USERDATA.config.force_timeline_start && USERDATA.config.force_timeline_end) { 
+    $(".timeline-holderNote").text(`Timeline limited to dates on or after '${USERDATA.config.force_timeline_start}' and on or before '${USERDATA.config.force_timeline_end}'. Change this setting in General Configuration.`) 
+  }
+  else if (USERDATA.config.force_timeline_start) {
+    $(".timeline-holderNote").text(`Timeline limited to dates on or after '${USERDATA.config.force_timeline_start}'. Change this setting in General Configuration.`)  
+  }
+  else if (USERDATA.config.force_timeline_end) { 
+    $(".timeline-holderNote").text(`Timeline limited to dates on or before '${USERDATA.config.force_timeline_end}'. Change this setting in General Configuration.`)  
+  }
+
 }
 // this sets up the draggable tasks, between resources and within an resource's task list
 function enableDragging() {
