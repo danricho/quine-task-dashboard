@@ -416,6 +416,7 @@ $( document ).ready(function() {
   console.log("EVENT: Document Ready");
 
   themeChanger();
+  scaleChanger();
 
   updatePage(); // first render
   setChangesPresent(false);
@@ -1402,6 +1403,55 @@ function themeChanger(){
     apply(mode === 'dark' ? true
           : mode === 'light' ? false
           : !document.documentElement.classList.contains('dark'));
+  });
+}
+// sorts out the page scaling, memory, button, default and stuff
+function scaleChanger() {
+  const KEY = 'fontScalePct';
+  const DEFAULT = 90;   // your baseline
+  const STEP = 5;       // increments/decrements
+  const MIN = 60;       // adjust as you like
+  const MAX = 140;      // adjust as you like
+
+  const clamp = (n) => Math.min(MAX, Math.max(MIN, n));
+
+  const readStored = () => {
+    try {
+      const raw = localStorage.getItem(KEY);
+      const n = raw == null ? NaN : Number(raw);
+      return Number.isFinite(n) ? clamp(n) : DEFAULT;
+    } catch (_) {
+      return DEFAULT;
+    }
+  };
+
+  const apply = (pct) => {
+    const value = clamp(Math.round(pct)); // keep it clean
+    document.documentElement.style.fontSize = value + '%';
+    try { localStorage.setItem(KEY, String(value)); } catch (_) {}
+  };
+
+  // restore on load
+  apply(readStored());
+
+  document.addEventListener('basecoat:scale', (event) => {
+    const d = event.detail || {};
+
+    // 1) Explicit value: { value: 95 }
+    if (typeof d.value === 'number' && Number.isFinite(d.value)) {
+      apply(d.value);
+      return;
+    }
+
+    // 2) Step: { step: +5 } or { step: -5 }
+    if (typeof d.step === 'number' && Number.isFinite(d.step)) {
+      apply(readStored() + d.step);
+      return;
+    }
+
+    // 3) Convenience: { action: 'increase' | 'decrease' }
+    if (d.action === 'increase') apply(readStored() + STEP);
+    else if (d.action === 'decrease') apply(readStored() - STEP);
   });
 }
 // Warn user before closing or navigate away (if unsaved changes exist)
