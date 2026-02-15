@@ -1,6 +1,3 @@
-> [!IMPORTANT]
-> As of this commit, version 2.0.0 is being introduced, however there remains some functional development (Coming Soon™).
-
 # Quine Task Dashboard
 
 A lightweight, self-contained dashboard for managing milestones, tasks, and team priorities — delivered as a single local HTML file.
