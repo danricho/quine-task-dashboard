@@ -1935,7 +1935,7 @@ $(document).ready(function () {
 
   
   // this is the save allocation option event on the allocation option modal
-  $root // BUG: THIS ISN'T WORKING AS THE FUNCTION IT USES DOESN'T EXIST
+  $root 
   .off('click.app', '#existingAllocationsList .save-allocation')
   .on('click.app', '#existingAllocationsList .save-allocation', function () {
     const oldName = $(this).data('old') || $(this).attr('data-old');
