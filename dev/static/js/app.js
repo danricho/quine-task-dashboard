@@ -6,7 +6,7 @@ let taskMap = {};             // quicker lookups of tasks from ID
 let showCompleted = false;    // enables the rendering of completed tasks
 let unsavedChanges = false;   // used to know if something has been edited and so the save button should be active and a warning on page close
 const readOnlyMode = false;
-const activeFilters = { categories: new Set(), milestones: new Set(), searchText: "", dateAfter: null, dateBefore: null }; // tracks active filters
+const activeFilters = { categories: new Set(), milestones: new Set(), searchText: "", dateAfter: null, dateBefore: null, excludePerpetual: false }; // tracks active filters
 
 // --------------------------------------------------- //
 //  HELPER FUNCTIONS
@@ -159,6 +159,19 @@ function matchesActiveFilters(task) {
       if (ms) { if (ms.date && ms.date > activeFilters.dateBefore) { return false } } // milestone date exists and is after maximum date 
     } 
     else if (task.date && task.date > activeFilters.dateBefore) { return false } // direct date exists and is after maximum date
+  }
+
+  if (activeFilters.excludePerpetual){
+    if (!task.date){
+      if (!task.milestoneId) { return false } // no date and no milestone indicated
+      else {
+        const ms = milestoneFromId(task.milestoneId);
+        if (!ms) { return false } // linked milestone not found
+        else {
+          if (!ms.date) { return false } // no date on linked milestone
+        }
+      }
+    }
   }
 
   return true;
@@ -335,7 +348,7 @@ function renderActiveFilterStringAndButtonState() {
 
   // (optional) text search
   if (String(activeFilters.searchText).trim() !== "") {
-    parts.push(`Contains "${String(activeFilters.searchText).trim()}"`);
+    parts.push(`<strong>Contains text</strong> "${String(activeFilters.searchText).trim()}"`);
   }
 
   // categories
@@ -344,7 +357,7 @@ function renderActiveFilterStringAndButtonState() {
       const c = categoryMap[code];
       return c ? c.name : code;
     });
-    parts.push(`Category in [ ${names.join(", ")} ]`);
+    parts.push(`<strong>Category IN</strong> [${names.join(", ")}]`);
   }
 
   // milestones
@@ -353,17 +366,21 @@ function renderActiveFilterStringAndButtonState() {
       const ms = milestoneMap[Number(idStr)];
       return ms ? ms.name : `Milestone ${idStr}`;
     });
-    parts.push(`Milestone in [ ${names.join(", ")} ]`);
+    parts.push(`<strong>Milestone IN</strong> [${names.join(", ")}]`);
   }
 
   if (activeFilters.dateAfter && !activeFilters.dateBefore){
-    parts.push(`Task (or Milestone) date after or on '${activeFilters.dateAfter}'`);
+    parts.push(`Task (or Milestone) <strong>date AFTER</strong> or on '${activeFilters.dateAfter}'`);
   }
   else if (activeFilters.dateBefore && !activeFilters.dateAfter){
-    parts.push(`Task (or Milestone) date before or on '${activeFilters.dateBefore}'`);
+    parts.push(`Task (or Milestone) <strong>date BEFORE</strong> or on '${activeFilters.dateBefore}'`);
   }
   else if (activeFilters.dateBefore && activeFilters.dateAfter){
-    parts.push(`Task (or Milestone) date between or on '${activeFilters.dateAfter}' and '${activeFilters.dateBefore}'`);
+    parts.push(`Task (or Milestone) <strong>date BETWEEN</strong> or on '${activeFilters.dateAfter}' and '${activeFilters.dateBefore}'`);
+  }
+
+  if (activeFilters.excludePerpetual){
+    parts.push(`Task (or Milestone) is <strong>not PERPETUAL</strong> or undated.`);
   }
 
   if (parts.length === 0) {
@@ -373,7 +390,7 @@ function renderActiveFilterStringAndButtonState() {
   }else{
     $("#active-filter-string").parent().removeClass("hidden");    
     $("button#button-filter-clear").prop("disabled", false).addClass("btn-primary").removeClass("btn-secondary");
-    $("#active-filter-string").html("<strong>Active task filters:</strong> " + parts.join(" AND "));
+    $("#active-filter-string").html("<strong>ACTIVE TASK FILTERS:</strong><br /><ul><li class='ms-5'>" + parts.join(" <strong>AND</strong> </li><li class='ms-5'>") + "</li></ul>");
   }
 }
 // this shows a temporary 'taost' popup notifaction
@@ -1278,6 +1295,7 @@ function clearTaskFilters() {
   activeFilters.milestones.clear();
   activeFilters.dateBefore = null;
   activeFilters.dateAfter = null;
+  activeFilters.excludePerpetual = false;
   activeFilters.searchText = "";
   var currentUnsavedChanges = unsavedChanges;
   updatePage();
@@ -1299,6 +1317,8 @@ function applyFilters(){
   activeFilters.dateBefore = $("#dialog-configure-task-filters #filters-before-date-input").val();  
   if (activeFilters.dateBefore == "") activeFilters.dateBefore = null;
 
+  activeFilters.excludePerpetual = $("#dialog-configure-task-filters #filters-exclude-perpetual").prop("checked");
+
   var currentUnsavedChanges = unsavedChanges;
   updatePage();
   setChangesPresent(currentUnsavedChanges);
@@ -1308,8 +1328,11 @@ function setupAndShowFiltersModal(){
   $("#dialog-configure-task-filters .select-multiple-categories").get(0).value = [...activeFilters.categories];
   $("#dialog-configure-task-filters .select-multiple-milestones").get(0).value = [...activeFilters.milestones];
   $("#dialog-configure-task-filters #filters-string").val(activeFilters.searchText);
+  
   $("#dialog-configure-task-filters #filters-before-date-input").val(activeFilters.dateBefore);
   $("#dialog-configure-task-filters #filters-after-date-input").val(activeFilters.dateAfter);
+
+  $("#dialog-configure-task-filters #filters-exclude-perpetual").prop("checked", activeFilters.excludePerpetual);
   $('#dialog-configure-task-filters').get(0).showModal();
 }
 // this sets up and shows the configure resources modal

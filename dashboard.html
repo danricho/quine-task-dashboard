@@ -26,7 +26,7 @@
     <!-- <script src="data/autoload-USERDATA-sample-small.js"></script> -->
     <!-- <script src="data/autoload-USERDATA-sample-extended.js"></script> -->
 
-    <script>let scrollPos=0;let milestoneMap={};let categoryMap={};let resourceMap={};let taskMap={};let showCompleted=false;let unsavedChanges=false;const readOnlyMode=false;const activeFilters={categories:new Set(),milestones:new Set(),searchText:"",dateAfter:null,dateBefore:null};function isPastDate(dateStr){const today=new Date();today.setHours(23,59,59,999);const due=new Date(dateStr);return due<today;}
+    <script>let scrollPos=0;let milestoneMap={};let categoryMap={};let resourceMap={};let taskMap={};let showCompleted=false;let unsavedChanges=false;const readOnlyMode=false;const activeFilters={categories:new Set(),milestones:new Set(),searchText:"",dateAfter:null,dateBefore:null,excludePerpetual:false};function isPastDate(dateStr){const today=new Date();today.setHours(23,59,59,999);const due=new Date(dateStr);return due<today;}
 function isSoon(dateStr){const today=new Date();today.setHours(23,59,59,999);const due=new Date(dateStr);return(due-today)/1000<=((USERDATA.config.soon_duration||7)*24*60*60);}
 function todayYMD(){const d=new Date();const yyyy=d.getFullYear();const mm=String(d.getMonth()+1).padStart(2,"0");const dd=String(d.getDate()).padStart(2,"0");return`${yyyy}-${mm}-${dd}`;}
 function createHtmlIdFromString(str){return String(str).toLowerCase().replaceAll(" ","-").replaceAll("(","").replaceAll(",","").replaceAll(")","").replaceAll(":","");}
@@ -51,6 +51,9 @@ if(activeFilters.dateAfter){if(task.milestoneId){const ms=milestoneFromId(task.m
 else if(task.date&&task.date<activeFilters.dateAfter){return false}}
 if(activeFilters.dateBefore){if(task.milestoneId){const ms=milestoneFromId(task.milestoneId);if(ms){if(ms.date&&ms.date>activeFilters.dateBefore){return false}}}
 else if(task.date&&task.date>activeFilters.dateBefore){return false}}
+if(activeFilters.excludePerpetual){if(!task.date){if(!task.milestoneId){return false}
+else{const ms=milestoneFromId(task.milestoneId);if(!ms){return false}
+else{if(!ms.date){return false}}}}}
 return true;}
 function exportUserData(filename="USERDATA.json"){try{const jsonString=JSON.stringify(USERDATA,null,2);const blob=new Blob([jsonString],{type:"application/json"});const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download=filename;document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);console.log("USERDATA exported");showToast('success','USERDATA Exported',"Data was saved to the JSON file.");}catch(err){console.error("Export failed:",err);}}
 function importUserData(){return new Promise((resolve,reject)=>{const input=document.createElement("input");input.type="file";input.accept="application/json";input.onchange=(event)=>{const file=event.target.files[0];if(!file){reject("No file selected");return;}
@@ -68,13 +71,14 @@ optionsArr.push($('<option>',{value:""}).text("- NO MILESTONE -"));USERDATA.mile
 optionsArr.push($('<option>',{value:""}).text("- NO CATEGORY -"));USERDATA.categories.forEach(c=>{optionsArr.push($('<option>',{value:c.code}).text(c.name));});$("select.select-category").html("").append(optionsArr);optionsArr=[]
 USERDATA.categories.forEach(c=>{optionsArr.push($('<div>',{role:"option","data-value":c.code.toLowerCase(),"data-label":c.name}).html(`<span>${c.name}</span>`));});cln=$('.select-multiple-categories').clone().removeAttr("data-select-initialized");cln.find('[role="listbox"]').html("").append(optionsArr);$('.select-multiple-categories').replaceWith(cln);optionsArr=[]
 USERDATA.milestones.forEach(m=>{optionsArr.push($('<div>',{role:"option","data-value":m.id,"data-label":m.name}).html(`<span>${m.name}</span>`));});cln=$('.select-multiple-milestones').clone().removeAttr("data-select-initialized");cln.find('[role="listbox"]').html("").append(optionsArr);$('.select-multiple-milestones').replaceWith(cln);}
-function renderActiveFilterStringAndButtonState(){const parts=[];if(String(activeFilters.searchText).trim()!==""){parts.push(`Contains "${String(activeFilters.searchText).trim()}"`);}
-if(activeFilters.categories.size>0){const names=[...activeFilters.categories].map(code=>{const c=categoryMap[code];return c?c.name:code;});parts.push(`Category in [ ${names.join(", ")} ]`);}
-if(activeFilters.milestones.size>0){const names=[...activeFilters.milestones].map(idStr=>{const ms=milestoneMap[Number(idStr)];return ms?ms.name:`Milestone ${idStr}`;});parts.push(`Milestone in [ ${names.join(", ")} ]`);}
-if(activeFilters.dateAfter&&!activeFilters.dateBefore){parts.push(`Task (or Milestone) date after or on '${activeFilters.dateAfter}'`);}
-else if(activeFilters.dateBefore&&!activeFilters.dateAfter){parts.push(`Task (or Milestone) date before or on '${activeFilters.dateBefore}'`);}
-else if(activeFilters.dateBefore&&activeFilters.dateAfter){parts.push(`Task (or Milestone) date between or on '${activeFilters.dateAfter}' and '${activeFilters.dateBefore}'`);}
-if(parts.length===0){$("#active-filter-string").parent().addClass("hidden");$("button#button-filter-clear").prop("disabled",true).addClass("btn-secondary").removeClass("btn-primary");$("#active-filter-string").html("No active filters. Showing all tasks.");}else{$("#active-filter-string").parent().removeClass("hidden");$("button#button-filter-clear").prop("disabled",false).addClass("btn-primary").removeClass("btn-secondary");$("#active-filter-string").html("<strong>Active task filters:</strong> "+parts.join(" AND "));}}
+function renderActiveFilterStringAndButtonState(){const parts=[];if(String(activeFilters.searchText).trim()!==""){parts.push(`<strong>Contains text</strong> "${String(activeFilters.searchText).trim()}"`);}
+if(activeFilters.categories.size>0){const names=[...activeFilters.categories].map(code=>{const c=categoryMap[code];return c?c.name:code;});parts.push(`<strong>Category IN</strong> [${names.join(", ")}]`);}
+if(activeFilters.milestones.size>0){const names=[...activeFilters.milestones].map(idStr=>{const ms=milestoneMap[Number(idStr)];return ms?ms.name:`Milestone ${idStr}`;});parts.push(`<strong>Milestone IN</strong> [${names.join(", ")}]`);}
+if(activeFilters.dateAfter&&!activeFilters.dateBefore){parts.push(`Task (or Milestone) <strong>date AFTER</strong> or on '${activeFilters.dateAfter}'`);}
+else if(activeFilters.dateBefore&&!activeFilters.dateAfter){parts.push(`Task (or Milestone) <strong>date BEFORE</strong> or on '${activeFilters.dateBefore}'`);}
+else if(activeFilters.dateBefore&&activeFilters.dateAfter){parts.push(`Task (or Milestone) <strong>date BETWEEN</strong> or on '${activeFilters.dateAfter}' and '${activeFilters.dateBefore}'`);}
+if(activeFilters.excludePerpetual){parts.push(`Task (or Milestone) is <strong>not PERPETUAL</strong> or undated.`);}
+if(parts.length===0){$("#active-filter-string").parent().addClass("hidden");$("button#button-filter-clear").prop("disabled",true).addClass("btn-secondary").removeClass("btn-primary");$("#active-filter-string").html("No active filters. Showing all tasks.");}else{$("#active-filter-string").parent().removeClass("hidden");$("button#button-filter-clear").prop("disabled",false).addClass("btn-primary").removeClass("btn-secondary");$("#active-filter-string").html("<strong>ACTIVE TASK FILTERS:</strong><br /><ul><li class='ms-5'>"+parts.join(" <strong>AND</strong> </li><li class='ms-5'>")+"</li></ul>");}}
 function showToast(cat,title,description){console.log("TOAST:",$("<div>").html(description).text());document.dispatchEvent(new CustomEvent('basecoat:toast',{detail:{config:{category:cat,title:title,description:description}}}));}
 function updatePage(){console.log("EVENT: Page update triggered")
 scrollPos=window.scrollY
@@ -191,11 +195,11 @@ function askDeleteCompleteTasksBefore(){$("input#remove-complete-tasks-threshold
 $("#alert-delete-completed-tasks-date").text(dateStr);document.getElementById('alert-delete-completed-tasks').showModal();}
 function deleteCompleteTasksBefore(){ymd=$("input#remove-complete-tasks-threshold-date").val();USERDATA.tasks=USERDATA.tasks.filter(t=>{if(!t.completed)return true;return t.completed.localeCompare(ymd)>=0;});$("input#remove-complete-tasks-threshold-date").val("");showToast('success','Tasks Deleted',`Completed tasks before <strong>${ymd}</strong> are now deleted.`);updatePage();}
 function showResourceTimeline(name){$('#dialog-task-resource-name').text(name);$('#dialog-task-timeline .timeline-holder').html('');renderTasksTimeline(name);$('#dialog-task-timeline').get(0).showModal();}
-function clearTaskFilters(){activeFilters.categories.clear();activeFilters.milestones.clear();activeFilters.dateBefore=null;activeFilters.dateAfter=null;activeFilters.searchText="";var currentUnsavedChanges=unsavedChanges;updatePage();setChangesPresent(currentUnsavedChanges);}
+function clearTaskFilters(){activeFilters.categories.clear();activeFilters.milestones.clear();activeFilters.dateBefore=null;activeFilters.dateAfter=null;activeFilters.excludePerpetual=false;activeFilters.searchText="";var currentUnsavedChanges=unsavedChanges;updatePage();setChangesPresent(currentUnsavedChanges);}
 function applyFilters(){activeFilters.categories.clear();for(const item of $("#dialog-configure-task-filters .select-multiple-categories").get(0).value){activeFilters.categories.add(item);}
 activeFilters.milestones.clear();for(const item of $("#dialog-configure-task-filters .select-multiple-milestones").get(0).value){activeFilters.milestones.add(item);}
-activeFilters.searchText=$("#dialog-configure-task-filters #filters-string").val();activeFilters.dateAfter=$("#dialog-configure-task-filters #filters-after-date-input").val();if(activeFilters.dateAfter=="")activeFilters.dateAfter=null;activeFilters.dateBefore=$("#dialog-configure-task-filters #filters-before-date-input").val();if(activeFilters.dateBefore=="")activeFilters.dateBefore=null;var currentUnsavedChanges=unsavedChanges;updatePage();setChangesPresent(currentUnsavedChanges);}
-function setupAndShowFiltersModal(){$("#dialog-configure-task-filters .select-multiple-categories").get(0).value=[...activeFilters.categories];$("#dialog-configure-task-filters .select-multiple-milestones").get(0).value=[...activeFilters.milestones];$("#dialog-configure-task-filters #filters-string").val(activeFilters.searchText);$("#dialog-configure-task-filters #filters-before-date-input").val(activeFilters.dateBefore);$("#dialog-configure-task-filters #filters-after-date-input").val(activeFilters.dateAfter);$('#dialog-configure-task-filters').get(0).showModal();}
+activeFilters.searchText=$("#dialog-configure-task-filters #filters-string").val();activeFilters.dateAfter=$("#dialog-configure-task-filters #filters-after-date-input").val();if(activeFilters.dateAfter=="")activeFilters.dateAfter=null;activeFilters.dateBefore=$("#dialog-configure-task-filters #filters-before-date-input").val();if(activeFilters.dateBefore=="")activeFilters.dateBefore=null;activeFilters.excludePerpetual=$("#dialog-configure-task-filters #filters-exclude-perpetual").prop("checked");var currentUnsavedChanges=unsavedChanges;updatePage();setChangesPresent(currentUnsavedChanges);}
+function setupAndShowFiltersModal(){$("#dialog-configure-task-filters .select-multiple-categories").get(0).value=[...activeFilters.categories];$("#dialog-configure-task-filters .select-multiple-milestones").get(0).value=[...activeFilters.milestones];$("#dialog-configure-task-filters #filters-string").val(activeFilters.searchText);$("#dialog-configure-task-filters #filters-before-date-input").val(activeFilters.dateBefore);$("#dialog-configure-task-filters #filters-after-date-input").val(activeFilters.dateAfter);$("#dialog-configure-task-filters #filters-exclude-perpetual").prop("checked",activeFilters.excludePerpetual);$('#dialog-configure-task-filters').get(0).showModal();}
 function setupResourcesModal(){tmplt=$('#dialog-configure-resources .editable-resource-entry.hidden')
 $(tmplt).parent().find(".editable-resource-entry:not(.hidden)").remove();USERDATA.resources.forEach(r=>{resDiv=tmplt.clone().removeClass("hidden")
 resDiv.attr("data-name",r.name)
@@ -348,7 +352,7 @@ const blob=new Blob([div[0].innerHTML],{type:"text/html"});const data=[new Clipb
 
             <div class="py-6 text-sm border-t">
               <p><a class="text-neutral-500/75 hover:text-neutral-500 hover:underline decoration-solid cursor-pointer" data-tooltip="Quine Task Dashboard on GitHub" data-align="start" 
-                 href="https://github.com/danricho/quine-task-dashboard" target="_blank">Quine Task Dashboard <span id='version'>v2.0.5</span></a></p>
+                 href="https://github.com/danricho/quine-task-dashboard" target="_blank">Quine Task Dashboard <span id='version'>v2.0.6</span></a></p>
               <p><a class="text-neutral-500/75 hover:text-neutral-500 hover:underline decoration-solid cursor-pointer" data-tooltip="danricho on GitHub" data-align="start" 
                  href="https://github.com/danricho" target="_blank">danricho, 2026</a></p>
             </div>
@@ -837,6 +841,11 @@ const blob=new Blob([div[0].innerHTML],{type:"text/html"});const data=[new Clipb
                 </div>            
               </div>
               <p class="text-muted-foreground text-sm">Note: These don't  filter-out PERPETUAL tasks</p>
+            </div>
+
+            <div class="flex gap-3">
+              <label for="filters-exclude-perpetual">Exclude PERPETUAL tasks (direct or via linked milestones)</label>
+              <input type="checkbox" id="filters-exclude-perpetual" role="switch">
             </div>
             
           </form>  
