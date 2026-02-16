@@ -1,8 +1,17 @@
 
-:root { --topbar-h: 60px; font-size: 90%; --sidebar-width: 15rem; }
+:root { 
+  --topbar-h: 60px; font-size: 90%; 
+  --sidebar-width: 15rem; 
+  --secondary-hover: oklch(0.92 0 0); 
+}
+.dark { --secondary-hover: oklch(.319 0 0);}
 
 html { scroll-padding-top: calc( var(--topbar-h) + 10px); }
 body { background: var(--background); color: var(--foreground); }
+
+.task, .milestone { background-color: var(--secondary); }
+.task:hover, .milestone:hover { background-color: var(--secondary-hover); }
+
 
 /* Fixed (non-scrolling) banner */
 .topbar {

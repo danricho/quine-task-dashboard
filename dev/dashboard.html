@@ -113,7 +113,7 @@
 
             <div class="py-6 text-sm border-t">
               <p><a class="text-neutral-500/75 hover:text-neutral-500 hover:underline decoration-solid cursor-pointer" data-tooltip="Quine Task Dashboard on GitHub" data-align="start" 
-                 href="https://github.com/danricho/quine-task-dashboard" target="_blank">Quine Task Dashboard <span id='version'>v2.0.6</span></a></p>
+                 href="https://github.com/danricho/quine-task-dashboard" target="_blank">Quine Task Dashboard <span id='version'>v2.0.7</span></a></p>
               <p><a class="text-neutral-500/75 hover:text-neutral-500 hover:underline decoration-solid cursor-pointer" data-tooltip="danricho on GitHub" data-align="start" 
                  href="https://github.com/danricho" target="_blank">danricho, 2026</a></p>
             </div>
@@ -167,8 +167,8 @@
               <div role="tabpanel" id="milestones-panel-2" aria-labelledby="milestones-tab-2" tabindex="-1" aria-selected="true">
                 <section class="my-2">
                   <div>
-                    <div id="milestoneTimeline" style="position: relative;"></div>
-                    <div id="milestoneTimelineNote" class="text-sm text-red-600"></div>
+                    <div id="milestoneTimeline" style="position: relative;" class="my-6"></div>
+                    <div id="milestoneTimelineNote" class="text-sm text-red-600 opacity-50"></div>
                   </div>
                 </section>
               </div>
@@ -526,9 +526,9 @@
           <h2 id="dialog-task-timeline-title">View Task Timeline for <span class="font-semibold" id="dialog-task-resource-name"></span></h2>
         </header>
 
-        <section class="my-4">
+        <section class="my-4 flex flex-col gap-6">
           <div class="timeline-holder"></div>
-          <div class="timeline-holderNote text-sm text-red-600"></div>
+          <div class="timeline-holderNote text-sm text-red-600 opacity-50"></div>
         </section>
 
         <footer>
@@ -825,7 +825,7 @@
     <div id="toaster" class="toaster" data-align="center"></div>
 
     <template id="template-milestone">
-      <div class="milestone rounded-md py-2 px-3 cursor-default" style="background-color: var(--secondary);" data-msid="">
+      <div class="milestone rounded-md py-2 px-3 cursor-default" data-msid="">
         <div class="flex gap-3">
           <div class="shrink milestoneName" data-edit-event="dblclick.textEditor">Template for Milestones</div>
           <div class="grow">
@@ -895,7 +895,7 @@
       </div>
     </template>
     <template id="template-task">
-      <div class="task rounded-md py-2 px-3 cursor-default" style="background-color: var(--secondary);" data-itemid="">
+      <div class="task rounded-md py-2 px-3 cursor-default" data-itemid="">
         <div class="flex gap-3">
           <div class="shrink category font-semibold" style="min-width: 2.2em;">EG1</div>
           <div class="shrink taskName" data-edit-event="dblclick.textEditor">Template for Tasks</div>
@@ -965,7 +965,7 @@
       </div>
     </template>
     <template id="template-task-dropzone">
-      <div class="task task-dropzone opacity-30 rounded-md py-1 px-3 text-center" style="background-color: var(--secondary);">Drop tasks here!</div>
+      <div class="task task-dropzone opacity-30 rounded-md py-1 px-3 text-center">Drop tasks here!</div>
     </template>
 
     <div class="fixed right-0 w-fit z-999 hidden" style="top: var(--topbar-h);">

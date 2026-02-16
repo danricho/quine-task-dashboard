@@ -662,7 +662,7 @@ function createTaskElement(t){
   if (t.linkOther) {
     taskDiv.find("svg.link")
       .removeClass("text-sky-500/10 cursor-not-allowed").addClass("text-sky-500/70 hover:text-sky-500 cursor-pointer")
-      .wrap(`<a href='${t.linkConf}' target='_blank'></a>`); }
+      .wrap(`<a href='${t.linkOther}' target='_blank'></a>`); }
   else { taskDiv.find("svg.link").addClass("text-sky-500/20").removeClass("text-sky-500/70 hover:text-sky-500 cursor-pointer").parent().removeAttr("data-tooltip") }
 
   return taskDiv
@@ -1303,6 +1303,9 @@ function clearTaskFilters() {
 }
 // apply the filters from the modal inputs
 function applyFilters(){
+
+  $("#dialog-configure-task-filters *").removeAttr("aria-expanded"); // without this the multi-selects can get broken
+
   activeFilters.categories.clear();
   for (const item of $("#dialog-configure-task-filters .select-multiple-categories").get(0).value) {
     activeFilters.categories.add(item);
@@ -1583,7 +1586,6 @@ function quineSavePage(readonly=false) {
   sanitizeDOM();
   $("details#allocations-menu").prop("open", true);
   $("details#configurations-menu").prop("open", false);
-  $("#milestones-tab-2").click().parent().parent().removeAttr("data-tabs-initialized");
   $(".toast").remove();
 
   USERDATA.config.last_saved = nowString();
@@ -1597,6 +1599,9 @@ function quineSavePage(readonly=false) {
   // this will break this part of the script, however the readonly shouldn't use this function
   if (readonly){ html = html.replace( "const readOnlyMode=false;", "const readOnlyMode=true;" ) } 
   
+  // this removes initializes atributes for: data-sidebar-initialized | data-tabs-initialized | data-select-initialized | data-toaster-initialized
+  html = html.replace(/\sdata-[a-z0-9-]+-initialized="[^"]*"/gi, '');
+
   // make it downloadable
   const blob = new Blob([html], { type: 'text/html' });
   const a = document.createElement('a');
