@@ -656,7 +656,7 @@ function createTaskElement(t){
   if (t.linkJira) {
     taskDiv.find("svg.jira")
       .removeClass("text-sky-500/10 cursor-not-allowed").addClass("text-sky-500/70 hover:text-sky-500 cursor-pointer")
-      .wrap(`<a href='${t.linkConf}' target='_blank'></a>`); }
+      .wrap(`<a href='${t.linkJira}' target='_blank'></a>`); }
   else { taskDiv.find("svg.jira").addClass("text-sky-500/20").removeClass("text-sky-500/70 hover:text-sky-500 cursor-pointer").parent().removeAttr("data-tooltip") }
 
   if (t.linkOther) {

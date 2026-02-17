@@ -103,7 +103,7 @@ else{taskDiv.find(".task-milestone .name").addClass("hidden");taskDiv.find(".tas
 taskDiv.find(".allocation .assignee").text(t.assignedTo||"Unallocated");if(t.completed){taskDiv.find(".allocation").removeClass("hidden");taskDiv.find(".complete-task").attr("data-tooltip","Mark task NOT complete");taskDiv.find(".complete-task svg").removeClass("text-green-600/20").addClass("text-green-600/80");if(t.completed!=true){taskDiv.find(".completed-date").removeClass("hidden");taskDiv.find(".completed-date span").text(t.completed);}}
 if(t.linkConf){taskDiv.find("svg.confluence").removeClass("text-sky-500/10 cursor-not-allowed").addClass("text-sky-500/70 hover:text-sky-500 cursor-pointer").wrap(`<a href='${t.linkConf}' target='_blank'></a>`);}
 else{taskDiv.find("svg.confluence").addClass("text-sky-500/20").removeClass("text-sky-500/70 hover:text-sky-500 cursor-pointer").parent().removeAttr("data-tooltip")}
-if(t.linkJira){taskDiv.find("svg.jira").removeClass("text-sky-500/10 cursor-not-allowed").addClass("text-sky-500/70 hover:text-sky-500 cursor-pointer").wrap(`<a href='${t.linkConf}' target='_blank'></a>`);}
+if(t.linkJira){taskDiv.find("svg.jira").removeClass("text-sky-500/10 cursor-not-allowed").addClass("text-sky-500/70 hover:text-sky-500 cursor-pointer").wrap(`<a href='${t.linkJira}' target='_blank'></a>`);}
 else{taskDiv.find("svg.jira").addClass("text-sky-500/20").removeClass("text-sky-500/70 hover:text-sky-500 cursor-pointer").parent().removeAttr("data-tooltip")}
 if(t.linkOther){taskDiv.find("svg.link").removeClass("text-sky-500/10 cursor-not-allowed").addClass("text-sky-500/70 hover:text-sky-500 cursor-pointer").wrap(`<a href='${t.linkOther}' target='_blank'></a>`);}
 else{taskDiv.find("svg.link").addClass("text-sky-500/20").removeClass("text-sky-500/70 hover:text-sky-500 cursor-pointer").parent().removeAttr("data-tooltip")}
@@ -352,7 +352,7 @@ const blob=new Blob([div[0].innerHTML],{type:"text/html"});const data=[new Clipb
 
             <div class="py-6 text-sm border-t">
               <p><a class="text-neutral-500/75 hover:text-neutral-500 hover:underline decoration-solid cursor-pointer" data-tooltip="Quine Task Dashboard on GitHub" data-align="start" 
-                 href="https://github.com/danricho/quine-task-dashboard" target="_blank">Quine Task Dashboard <span id='version'>v2.0.7</span></a></p>
+                 href="https://github.com/danricho/quine-task-dashboard" target="_blank">Quine Task Dashboard <span id='version'>v2.0.8</span></a></p>
               <p><a class="text-neutral-500/75 hover:text-neutral-500 hover:underline decoration-solid cursor-pointer" data-tooltip="danricho on GitHub" data-align="start" 
                  href="https://github.com/danricho" target="_blank">danricho, 2026</a></p>
             </div>
