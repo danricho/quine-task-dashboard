@@ -420,7 +420,7 @@ function updatePage(){
 
   sanitizeDOM();
 
-  if (readOnlyMode){ USERDATA.config.title = "[READONLY] " + USERDATA.config.title }
+  if (readOnlyMode && !USERDATA.config.title.startsWith("[READONLY] ")){ USERDATA.config.title = "[READONLY] " + USERDATA.config.title }
   $(document).prop('title', USERDATA.config.title);
   $("#heading-title").text(USERDATA.config.title);
   $("#heading-logo").html(USERDATA.config.logo);
@@ -1587,6 +1587,7 @@ function quineSavePage(readonly=false) {
   $("details#allocations-menu").prop("open", true);
   $("details#configurations-menu").prop("open", false);
   $(".toast").remove();
+  $("#milestones-tab-2").click(); // make sure the milestones timeline is shown when saving
 
   USERDATA.config.last_saved = nowString();
 
