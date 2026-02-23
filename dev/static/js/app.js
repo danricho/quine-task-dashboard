@@ -1790,6 +1790,7 @@ function checkForUpdateOncePerDay() {
     latestVersion = tags[0].name; // GitHub returns newest first
   }
 
+  console.log("GitHub version:", latestVersion)
   updateAvailable = isNewerVersion(latestVersion, currentVersion);
 
   localStorage.setItem(
