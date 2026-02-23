@@ -1201,11 +1201,9 @@ function saveEditedTask() {
 
   t.category = $("#dialog-edit-task-category").val(); if (t.category == ""){ t.category = null; } $("#dialog-edit-task-category").val("");
   inputCompleted = $("#dialog-edit-task-completed").prop("checked");
-  console.log(t.text, t.completed, Boolean(inputCompleted), inputCompleted)
-  if (t.completed != Boolean(inputCompleted)){    
+  if (Boolean(t.completed) != inputCompleted){    
     if (t.completed) { t.completed = false; } else if (t.completed == false) { t.completed = todayYMD(); }
   } $("#dialog-edit-task-completed").prop("checked", false);
-  console.log(t.completed)
 
   t.linkConf = $("#dialog-edit-task-confluence").val(); if (t.linkConf == ""){ t.linkConf = null; } $("#dialog-edit-task-confluence").val("");
   t.linkJira = $("#dialog-edit-task-jira").val(); if (t.linkJira == ""){ t.linkJira = null; } $("#dialog-edit-task-jira").val("");
