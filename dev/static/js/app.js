@@ -567,6 +567,7 @@ $( document ).ready(function() {
     exportUserData();
   });
  
+  setTimeout(() => { checkForUpdateOncePerDay(); }, 5000);
 
 })
 
@@ -1704,5 +1705,105 @@ function exportHTMLSummary() {
     .catch(() => showAlertModal("Failed to copy to clipboard.", "Export"));
   
   showToast('success', 'Copy to Clipboard', "Copied data to clipboard for pasting - doesn't include completed tasks.");
+}
+
+function checkForUpdateOncePerDay() {
+
+  function isNewerVersion(latest, current) {
+    function normalize(v) {
+      return v
+        .replace(/^v/, "")
+        .split(".")
+        .map(function (n) {
+          return parseInt(n, 10) || 0;
+        });
+    }
+
+    var l = normalize(latest);
+    var c = normalize(current);
+    var length = Math.max(l.length, c.length);
+
+    for (var i = 0; i < length; i++) {
+      var diff = (l[i] || 0) - (c[i] || 0);
+      if (diff > 0) return true;
+      if (diff < 0) return false;
+    }
+
+    return false;
+  }
+
+  console.log("Checking version.")
+  currentVersion = $("#version").text();
+  console.log("Current version:", currentVersion)
+
+  var latestVersion;
+  var lastChecked = 0;
+  
+  // localStorage.removeItem("app_version_check"); // clears local storage item - used to test
+
+  var cachedRaw = localStorage.getItem("app_version_check");
+  var now = Date.now();
+
+  if (cachedRaw) {
+    try {
+      var cached = JSON.parse(cachedRaw);
+      latestVersion = cached.latestVersion;
+      lastChecked = cached.lastChecked;
+    } catch (e) { } // Ignore corrupted cache    
+  }
+
+  if (now - lastChecked < 24 * 60 * 60 * 1000 ) {
+    console.log("Using cached check data.")
+  } else {
+    console.log("Getting latest data from Github.")
+
+     // --- Synchronous GitHub tags request ---
+    var xhr = new XMLHttpRequest();
+    xhr.open(
+      "GET",
+      "https://api.github.com/repos/" + "danricho" + "/" + "quine-task-dashboard" + "/tags",
+      false // ← synchronous
+    );
+
+    try {
+      xhr.send(null);
+    } catch (e) {
+      console.error("Version check failed!\n", e);
+      return false;
+    }
+
+    if (xhr.status !== 200) {
+      console.error("GitHub API error!\n", xhr.status);
+      return false;
+    }
+
+    var tags = JSON.parse(xhr.responseText);
+
+    if (!tags || !tags.length) {
+      return false;
+    }
+
+    latestVersion = tags[0].name; // GitHub returns newest first
+  }
+
+  updateAvailable = isNewerVersion(latestVersion, currentVersion);
+
+  localStorage.setItem(
+    "app_version_check",
+    JSON.stringify({
+      lastChecked: now,
+      latestVersion: latestVersion
+    })
+  );
+
+  if (updateAvailable) {    
+    // console.log(`New version available : current ${currentVersion}, latest ${latestVersion}`);
+    showToast('success', 'Version Check', `New version is available on Github (${latestVersion}).`);
+    $("#github-link").attr("data-tooltip", "Github Repo - NEW version available!")
+  } else {
+    // console.log(`Up to date : current ${currentVersion}, latest ${latestVersion}`);
+    $("#github-link").attr("data-tooltip", "Github Repo - No new version yet.")
+  }
+  
 }
 
