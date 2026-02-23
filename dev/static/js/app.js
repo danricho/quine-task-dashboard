@@ -558,6 +558,10 @@ $( document ).ready(function() {
     catDiv.appendTo($(tmplt).parent())
   });
 
+  $("body").on('click', '#dialog-configure-general-milestone-delta-clear, #dialog-configure-general-milestone-date-clear', function(){
+    $(this).parent().find("input").val("");
+  });
+
   $("body").on('click', 'button#import-json', function(){
     importUserData()
       .then(data => {console.log("Loaded:", data);})

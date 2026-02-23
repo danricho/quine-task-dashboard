@@ -113,7 +113,7 @@
 
             <div class="py-6 text-sm border-t">
               <p><a id="github-link" class="text-neutral-500/75 hover:text-neutral-500 hover:underline decoration-solid cursor-pointer" data-tooltip="Quine Task Dashboard on GitHub" data-align="start" 
-                 href="https://github.com/danricho/quine-task-dashboard" target="_blank">Quine Task Dashboard <span id='version'>v2.0.9</span></a></p>
+                 href="https://github.com/danricho/quine-task-dashboard" target="_blank">Quine Task Dashboard <span id='version'>v2.0.10</span></a></p>
               <p><a class="text-neutral-500/75 hover:text-neutral-500 hover:underline decoration-solid cursor-pointer" data-tooltip="danricho on GitHub" data-align="start" 
                  href="https://github.com/danricho" target="_blank">danricho, 2026</a></p>
             </div>
@@ -768,7 +768,7 @@
         </header>
 
          <section class="my-4">
-          <form class="form flex flex-col gap-8">
+          <form class="form flex flex-col gap-9">
 
             <div class="flex flex-col gap-2">
               <label for="dialog-configure-general-project-title" >Project Title</label>
@@ -786,8 +786,9 @@
               <input type="color" id="dialog-configure-general-project-color" value="#333333" />
             </div>
 
-            <div class="flex flex-col gap-2">Date limits in Timeline visualisations
-              <div class="flex gap-4">              
+            <div class="flex flex-col gap-3">Limits on Timelines
+              <div class="flex gap-5 items-center">     
+                <div><label>Static Dates: </label></div>
                 <div class="flex gap-2">              
                   <label for="dialog-configure-general-milestone-start-date">Start</label>
                   <input type="date" id="dialog-configure-general-milestone-start-date">
@@ -795,8 +796,23 @@
                 <div class="flex gap-2">
                   <label for="dialog-configure-general-milestone-end-date">End</label>
                   <input type="date" id="dialog-configure-general-milestone-end-date">
-                </div>            
+                </div>     
+                <button class="btn-secondary" id="dialog-configure-general-milestone-date-clear" onclick="return false;">Clear</button>       
               </div>
+              <div class="flex gap-5 items-center">  
+                <div><label>Days Delta (coming soon): </label></div>            
+                <div class="flex gap-2">              
+                  <label for="dialog-configure-general-milestone-start-delta">Start</label>
+                  <input class="w-25" type="number" id="dialog-configure-general-milestone-start-delta">
+                </div>
+                <div class="flex gap-2">
+                  <label for="dialog-configure-general-milestone-end-delta">End</label>
+                  <input class="w-25" type="number" id="dialog-configure-general-milestone-end-delta">
+                </div>       
+                <button class="btn-secondary" id="dialog-configure-general-milestone-delta-clear" onclick="return false;">Clear</button>               
+                     
+              </div>
+              <p class="text-muted-foreground text-sm">Dates take priority over deltas if both exist.</p>
             </div>
             
             <div class="flex flex-col gap-2">

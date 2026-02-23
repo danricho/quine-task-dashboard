@@ -88,7 +88,7 @@ renderActiveFilterStringAndButtonState();if(readOnlyMode){$(".edit-task, .edit-m
 window.scrollTo({top:scrollPos,left:0,behavior:"instant"})
 setChangesPresent(true);}
 $(document).ready(function(){console.log("EVENT: Document Ready");themeChanger();scaleChanger();updatePage();setChangesPresent(false);const $root=$('#container');$root.off('.app');$(window).on('hashchange',function(e){window.history.pushState("",document.title,window.location.pathname);})
-$("main").on('click','div.edit-task',function(){taskId=Number($(this).closest('.task').attr("data-itemid"));setupAndShowEditTaskModal(taskId);});$("main").on('click','div.edit-milestone',function(){milestoneId=Number($(this).closest('.milestone').attr("data-itemid"));setupAndShowEditMilestoneModal(milestoneId);});$("main").on('click','div.toggle-milstone-tentative',function(){if(!readOnlyMode){milestoneId=Number($(this).closest('.milestone').attr("data-itemid"));toggleMilestoneTentative(milestoneId);}});$("main").on('click','div.delete-milestone',function(){milestoneId=Number($(this).closest('.milestone').attr("data-itemid"));askMilestoneDeletion(milestoneId);});$("main").on('click','div.complete-task',function(){taskId=Number($(this).closest('.task').attr("data-itemid"));toggleTaskCompletion(taskId);});$("main").on('click','div.delete-task',function(){taskId=Number($(this).closest('.task').attr("data-itemid"));askTaskDeletion(taskId);});$("main").on('click','button#remove-complete-tasks-button',function(){askDeleteCompleteTasksBefore();});$("main").on('click','button.timeline',function(){resourceId=$(this).attr("data-resource-id");showResourceTimeline(resourceId);});$("main").on('click','button.add-task',function(){resourceId=$(this).attr("data-resource-id");setupAndShowAddTaskModal(resourceId);});$("main").on('click','button.show-completed-tasks',function(){showCompleted=!showCompleted;renderCompletedTasks();});$("body").on('click','#alert-complete-task button.confirm',function(){id=Number($("#alert-complete-task button.confirm").attr("data-task-id"));setTaskComplete(id);$('#alert-complete-task').get(0).close();});$("body").on('click','#alert-delete-task button.confirm',function(){id=Number($("#alert-delete-task button.confirm").attr("data-task-id"));deleteTask(id);$('#alert-delete-task').get(0).close();});$("body").on('click','#alert-delete-milestone button.confirm',function(){id=Number($("#alert-delete-milestone button.confirm").attr("data-task-id"));deleteMilestone(id);$('#alert-delete-milestone').get(0).close();});$("body").on('click','#alert-delete-completed-tasks button.confirm',function(){deleteCompleteTasksBefore();$('#alert-delete-completed-tasks').get(0).close();});$("body").on('click','#dialog-configure-resources button.stage-resource-deletion',function(){$(this).parents(".editable-resource-entry").toggleClass("opacity-25");$(this).toggleClass("btn-destructive text-red-600");});$("body").on('click','#dialog-configure-resources button.add-resource-div',function(){tmplt=$('#dialog-configure-resources .editable-resource-entry.hidden');resDiv=tmplt.clone().removeClass("hidden");resDiv.appendTo($(tmplt).parent())});$("body").on('change','select.category-color',function(){$(this).css("color",$(this).val());});$("body").on('click','#dialog-configure-categories button.stage-category-deletion',function(){$(this).parents(".editable-category-entry").toggleClass("opacity-25");$(this).toggleClass("btn-destructive text-red-600");});$("body").on('click','#dialog-configure-categories button.add-category-div',function(){tmplt=$('#dialog-configure-categories .editable-category-entry.hidden');catDiv=tmplt.clone().removeClass("hidden");catDiv.appendTo($(tmplt).parent())});$("body").on('click','button#import-json',function(){importUserData().then(data=>{console.log("Loaded:",data);}).catch(err=>console.error(err));});$("body").on('click','button#export-json',function(){exportUserData();});})
+$("main").on('click','div.edit-task',function(){taskId=Number($(this).closest('.task').attr("data-itemid"));setupAndShowEditTaskModal(taskId);});$("main").on('click','div.edit-milestone',function(){milestoneId=Number($(this).closest('.milestone').attr("data-itemid"));setupAndShowEditMilestoneModal(milestoneId);});$("main").on('click','div.toggle-milstone-tentative',function(){if(!readOnlyMode){milestoneId=Number($(this).closest('.milestone').attr("data-itemid"));toggleMilestoneTentative(milestoneId);}});$("main").on('click','div.delete-milestone',function(){milestoneId=Number($(this).closest('.milestone').attr("data-itemid"));askMilestoneDeletion(milestoneId);});$("main").on('click','div.complete-task',function(){taskId=Number($(this).closest('.task').attr("data-itemid"));toggleTaskCompletion(taskId);});$("main").on('click','div.delete-task',function(){taskId=Number($(this).closest('.task').attr("data-itemid"));askTaskDeletion(taskId);});$("main").on('click','button#remove-complete-tasks-button',function(){askDeleteCompleteTasksBefore();});$("main").on('click','button.timeline',function(){resourceId=$(this).attr("data-resource-id");showResourceTimeline(resourceId);});$("main").on('click','button.add-task',function(){resourceId=$(this).attr("data-resource-id");setupAndShowAddTaskModal(resourceId);});$("main").on('click','button.show-completed-tasks',function(){showCompleted=!showCompleted;renderCompletedTasks();});$("body").on('click','#alert-complete-task button.confirm',function(){id=Number($("#alert-complete-task button.confirm").attr("data-task-id"));setTaskComplete(id);$('#alert-complete-task').get(0).close();});$("body").on('click','#alert-delete-task button.confirm',function(){id=Number($("#alert-delete-task button.confirm").attr("data-task-id"));deleteTask(id);$('#alert-delete-task').get(0).close();});$("body").on('click','#alert-delete-milestone button.confirm',function(){id=Number($("#alert-delete-milestone button.confirm").attr("data-task-id"));deleteMilestone(id);$('#alert-delete-milestone').get(0).close();});$("body").on('click','#alert-delete-completed-tasks button.confirm',function(){deleteCompleteTasksBefore();$('#alert-delete-completed-tasks').get(0).close();});$("body").on('click','#dialog-configure-resources button.stage-resource-deletion',function(){$(this).parents(".editable-resource-entry").toggleClass("opacity-25");$(this).toggleClass("btn-destructive text-red-600");});$("body").on('click','#dialog-configure-resources button.add-resource-div',function(){tmplt=$('#dialog-configure-resources .editable-resource-entry.hidden');resDiv=tmplt.clone().removeClass("hidden");resDiv.appendTo($(tmplt).parent())});$("body").on('change','select.category-color',function(){$(this).css("color",$(this).val());});$("body").on('click','#dialog-configure-categories button.stage-category-deletion',function(){$(this).parents(".editable-category-entry").toggleClass("opacity-25");$(this).toggleClass("btn-destructive text-red-600");});$("body").on('click','#dialog-configure-categories button.add-category-div',function(){tmplt=$('#dialog-configure-categories .editable-category-entry.hidden');catDiv=tmplt.clone().removeClass("hidden");catDiv.appendTo($(tmplt).parent())});$("body").on('click','#dialog-configure-general-milestone-delta-clear, #dialog-configure-general-milestone-date-clear',function(){$(this).parent().find("input").val("");});$("body").on('click','button#import-json',function(){importUserData().then(data=>{console.log("Loaded:",data);}).catch(err=>console.error(err));});$("body").on('click','button#export-json',function(){exportUserData();});setTimeout(()=>{checkForUpdateOncePerDay();},5000);})
 function createMilestoneElement(ms){template=document.getElementById('template-milestone');clone=template.content.cloneNode(true);let msDiv=$(clone).find('.milestone');msDiv.attr({"data-itemid":ms.id});msDiv.find(".milestoneName").text(ms.name);if(ms.date){msDiv.find(".date").text(ms.date);if(isPastDate(ms.date))msDiv.find(".date").addClass("text-red-500");else if(isSoon(ms.date))msDiv.find(".date").addClass("text-yellow-500");if(ms.tentative){msDiv.find("svg.tentative").removeClass("opacity-10").addClass("opacity-50")}
 else{msDiv.find("svg.tentative").removeClass("opacity-50").addClass("opacity-10")}}
 else{msDiv.find(".date").addClass("opacity-70").text("PERPETUAL");}
@@ -179,9 +179,7 @@ else{$('#dialog-edit-task-assigned').val(t.assignedTo||"");}
 $('#dialog-edit-task-milestone').val(t.milestoneId||"");$('#dialog-edit-task-date').val(t.date||"");$('#dialog-edit-task-category').val(t.category||"");$('#dialog-edit-task-completed').prop("checked",!!t.completed);$('#dialog-edit-task-confluence').val(t.linkConf||"");$('#dialog-edit-task-jira').val(t.linkJira||"");$('#dialog-edit-task-other').val(t.linkOther||"");$('#dialog-edit-task').get(0).showModal();}
 function saveEditedTask(){targetId=Number($("#dialog-edit-task-id").val());$("#dialog-edit-task-id").val("");$("#dialog-edit-task-name-disp").text("");t=taskMap[targetId];t.text=$("#dialog-edit-task-name").val();if(t.text==""){t.text="UN-NAMED TASK - GIVE ME A NAME!! 🤣";}$("#dialog-edit-task-name").val("");t.assignedTo=$("#dialog-edit-task-assigned").val();if(t.assignedTo==""){t.assignedTo=null;}$("#dialog-edit-task-assigned").val("");newMilestone=Number($("#dialog-edit-task-milestone").val());$("#dialog-edit-task-milestone").val("");newDate=$("#dialog-edit-task-date").val();$("#dialog-edit-task-date").val("")
 if(newMilestone){t.milestoneId=newMilestone;t.date=null;}else if(newDate!=""){t.milestoneId=null;t.date=newDate;}else{t.milestoneId=null;t.date=null;}
-t.category=$("#dialog-edit-task-category").val();if(t.category==""){t.category=null;}$("#dialog-edit-task-category").val("");inputCompleted=$("#dialog-edit-task-completed").prop("checked");console.log(t.text,t.completed,Boolean(inputCompleted),inputCompleted)
-if(t.completed!=Boolean(inputCompleted)){if(t.completed){t.completed=false;}else if(t.completed==false){t.completed=todayYMD();}}$("#dialog-edit-task-completed").prop("checked",false);console.log(t.completed)
-t.linkConf=$("#dialog-edit-task-confluence").val();if(t.linkConf==""){t.linkConf=null;}$("#dialog-edit-task-confluence").val("");t.linkJira=$("#dialog-edit-task-jira").val();if(t.linkJira==""){t.linkJira=null;}$("#dialog-edit-task-jira").val("");t.linkOther=$("#dialog-edit-task-other").val();if(t.linkOther==""){t.linkOther=null;}$("#dialog-edit-task-other").val("");showToast('success','Task Edited',`<strong>${t.text}</strong> was edited successfully.`)
+t.category=$("#dialog-edit-task-category").val();if(t.category==""){t.category=null;}$("#dialog-edit-task-category").val("");inputCompleted=$("#dialog-edit-task-completed").prop("checked");if(Boolean(t.completed)!=inputCompleted){if(t.completed){t.completed=false;}else if(t.completed==false){t.completed=todayYMD();}}$("#dialog-edit-task-completed").prop("checked",false);t.linkConf=$("#dialog-edit-task-confluence").val();if(t.linkConf==""){t.linkConf=null;}$("#dialog-edit-task-confluence").val("");t.linkJira=$("#dialog-edit-task-jira").val();if(t.linkJira==""){t.linkJira=null;}$("#dialog-edit-task-jira").val("");t.linkOther=$("#dialog-edit-task-other").val();if(t.linkOther==""){t.linkOther=null;}$("#dialog-edit-task-other").val("");showToast('success','Task Edited',`<strong>${t.text}</strong> was edited successfully.`)
 updatePage();}
 function toggleMilestoneTentative(id){m=milestoneMap[id];m.tentative=!m.tentative;if(!m.tentative){showToast('success','Milestone Not-Tentative',`<strong>${m.name}</strong> is set to NOT tentative.`)
 updatePage();}else{showToast('success','Milestone Tentative',`<strong>${m.name}</strong> is set to tentative.`)
@@ -265,7 +263,19 @@ else if(t.date){tkli.append(` (Key Date: ${t.date})`);}
 else{tkli.append(` (Perpetual / No Date) `);}
 if(t.linkJira)tkli.append(` `).append($("<a>",{href:t.linkJira,text:'JIRA',target:'_blank'}));if(t.linkConf)tkli.append(` `).append($("<a>",{href:t.linkConf,text:'Confluence',target:'_blank'}));if(t.linkOther)tkli.append(` `).append($("<a>",{href:t.linkOther,text:'Other',target:'_blank'}));tkul.append(tkli)})
 div.append(tkul)})
-const blob=new Blob([div[0].innerHTML],{type:"text/html"});const data=[new ClipboardItem({"text/html":blob})];navigator.clipboard.write(data).then(()=>showAlertModal("HTML summary copied to clipboard.","Export")).catch(()=>showAlertModal("Failed to copy to clipboard.","Export"));showToast('success','Copy to Clipboard',"Copied data to clipboard for pasting - doesn't include completed tasks.");}</script>
+const blob=new Blob([div[0].innerHTML],{type:"text/html"});const data=[new ClipboardItem({"text/html":blob})];navigator.clipboard.write(data).then(()=>showAlertModal("HTML summary copied to clipboard.","Export")).catch(()=>showAlertModal("Failed to copy to clipboard.","Export"));showToast('success','Copy to Clipboard',"Copied data to clipboard for pasting - doesn't include completed tasks.");}
+function checkForUpdateOncePerDay(){function isNewerVersion(latest,current){function normalize(v){return v.replace(/^v/,"").split(".").map(function(n){return parseInt(n,10)||0;});}
+var l=normalize(latest);var c=normalize(current);var length=Math.max(l.length,c.length);for(var i=0;i<length;i++){var diff=(l[i]||0)-(c[i]||0);if(diff>0)return true;if(diff<0)return false;}
+return false;}
+console.log("Checking version.")
+currentVersion=$("#version").text();console.log("Current version:",currentVersion)
+var latestVersion;var lastChecked=0;var cachedRaw=localStorage.getItem("app_version_check");var now=Date.now();if(cachedRaw){try{var cached=JSON.parse(cachedRaw);latestVersion=cached.latestVersion;lastChecked=cached.lastChecked;}catch(e){}}
+if(now-lastChecked<24*60*60*1000){console.log("Using cached check data.")}else{console.log("Getting latest data from Github.")
+var xhr=new XMLHttpRequest();xhr.open("GET","https://api.github.com/repos/"+"danricho"+"/"+"quine-task-dashboard"+"/tags",false);try{xhr.send(null);}catch(e){console.error("Version check failed!\n",e);return false;}
+if(xhr.status!==200){console.error("GitHub API error!\n",xhr.status);return false;}
+var tags=JSON.parse(xhr.responseText);if(!tags||!tags.length){return false;}
+latestVersion=tags[0].name;}
+updateAvailable=isNewerVersion(latestVersion,currentVersion);localStorage.setItem("app_version_check",JSON.stringify({lastChecked:now,latestVersion:latestVersion}));if(updateAvailable){showToast('success','Version Check',`New version is available on Github (${latestVersion}).`);$("#github-link").attr("data-tooltip","Github Repo - NEW version available!")}else{$("#github-link").attr("data-tooltip","Github Repo - No new version yet.")}}</script>
     
   </head>
 
@@ -351,8 +361,8 @@ const blob=new Blob([div[0].innerHTML],{type:"text/html"});const data=[new Clipb
             </div>
 
             <div class="py-6 text-sm border-t">
-              <p><a class="text-neutral-500/75 hover:text-neutral-500 hover:underline decoration-solid cursor-pointer" data-tooltip="Quine Task Dashboard on GitHub" data-align="start" 
-                 href="https://github.com/danricho/quine-task-dashboard" target="_blank">Quine Task Dashboard <span id='version'>v2.0.9</span></a></p>
+              <p><a id="github-link" class="text-neutral-500/75 hover:text-neutral-500 hover:underline decoration-solid cursor-pointer" data-tooltip="Quine Task Dashboard on GitHub" data-align="start" 
+                 href="https://github.com/danricho/quine-task-dashboard" target="_blank">Quine Task Dashboard <span id='version'>v2.0.10</span></a></p>
               <p><a class="text-neutral-500/75 hover:text-neutral-500 hover:underline decoration-solid cursor-pointer" data-tooltip="danricho on GitHub" data-align="start" 
                  href="https://github.com/danricho" target="_blank">danricho, 2026</a></p>
             </div>
@@ -1007,7 +1017,7 @@ const blob=new Blob([div[0].innerHTML],{type:"text/html"});const data=[new Clipb
         </header>
 
          <section class="my-4">
-          <form class="form flex flex-col gap-8">
+          <form class="form flex flex-col gap-9">
 
             <div class="flex flex-col gap-2">
               <label for="dialog-configure-general-project-title" >Project Title</label>
@@ -1025,8 +1035,9 @@ const blob=new Blob([div[0].innerHTML],{type:"text/html"});const data=[new Clipb
               <input type="color" id="dialog-configure-general-project-color" value="#333333" />
             </div>
 
-            <div class="flex flex-col gap-2">Date limits in Timeline visualisations
-              <div class="flex gap-4">              
+            <div class="flex flex-col gap-3">Limits on Timelines
+              <div class="flex gap-5 items-center">     
+                <div><label>Static Dates: </label></div>
                 <div class="flex gap-2">              
                   <label for="dialog-configure-general-milestone-start-date">Start</label>
                   <input type="date" id="dialog-configure-general-milestone-start-date">
@@ -1034,8 +1045,23 @@ const blob=new Blob([div[0].innerHTML],{type:"text/html"});const data=[new Clipb
                 <div class="flex gap-2">
                   <label for="dialog-configure-general-milestone-end-date">End</label>
                   <input type="date" id="dialog-configure-general-milestone-end-date">
-                </div>            
+                </div>     
+                <button class="btn-secondary" id="dialog-configure-general-milestone-date-clear" onclick="return false;">Clear</button>       
               </div>
+              <div class="flex gap-5 items-center">  
+                <div><label>Days Delta (coming soon): </label></div>            
+                <div class="flex gap-2">              
+                  <label for="dialog-configure-general-milestone-start-delta">Start</label>
+                  <input class="w-25" type="number" id="dialog-configure-general-milestone-start-delta">
+                </div>
+                <div class="flex gap-2">
+                  <label for="dialog-configure-general-milestone-end-delta">End</label>
+                  <input class="w-25" type="number" id="dialog-configure-general-milestone-end-delta">
+                </div>       
+                <button class="btn-secondary" id="dialog-configure-general-milestone-delta-clear" onclick="return false;">Clear</button>               
+                     
+              </div>
+              <p class="text-muted-foreground text-sm">Dates take priority over deltas if both exist.</p>
             </div>
             
             <div class="flex flex-col gap-2">
