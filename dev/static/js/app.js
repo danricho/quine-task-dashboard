@@ -56,6 +56,17 @@ function nowString() {
     return formattedDate;
 
 }
+// returns a yyyy-mm-dd for a day offsetDays from today (negative or positive)
+function getDateFromToday(offsetDays) {
+  const date = new Date(); // today
+  date.setDate(date.getDate() + offsetDays);
+
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+
+  return `${year}-${month}-${day}`;
+}
 
 // --------------------------------------------------- //
 //  USER DATA MANIPULATION FUNCTIONS
@@ -284,6 +295,21 @@ function sanitizeDOM(){
   $('button.show-completed-tasks').text("Show Completed Task List");    
   $("#old-task-deletion-group").addClass("hidden");  
   $("#active-filter-string").html("");
+}
+// this is used to hide timeline ends (and their date/markers if they are the only item at the endpoint)
+function hideBasedOnSiblings($el) {
+    var $parent = $el.parent();
+    var childCount = $parent.children(".milestones-label").length;
+
+    if (childCount > 1) {
+        // More than one child → hide only the original element
+        $el.hide();    
+        $el.prev('br').hide();
+    } else {
+        // Only child → hide the parent instead
+        $parent.parent().parent().parent().hide();
+        // $parent.parent().parent().hide();
+    }
 }
 // this renders a timeline into the DOM and returns the handle for it
 function renderTimeline(selector, data, callbackfn){
@@ -745,37 +771,69 @@ function renderMilestoneTimeline() {
   // keep timeline ordered
   data.sort((a, b) => new Date(a.date) - new Date(b.date));
 
+  var message_components = [];
   if (USERDATA.config.force_timeline_start) {
     data = data.filter(m => m.date >= USERDATA.config.force_timeline_start);
     data.unshift({
       date: USERDATA.config.force_timeline_start,
-      title: "Timeline Start",
-      textStyle: { "opacity": "0.5" }
+      title: "{TIMELINE START}"
     })
+    message_components.push(`on or after ${USERDATA.config.force_timeline_start}`)
+
+  } else if (USERDATA.config.force_timeline_start_delta){
+    const start_date = getDateFromToday(USERDATA.config.force_timeline_start_delta)
+    data = data.filter(m => m.date >= start_date);
+    data.unshift({
+      date: start_date,
+      title: "{TIMELINE START}"
+    })
+    if ( USERDATA.config.force_timeline_start_delta < 0 ){
+      message_components.push(`on or after ${start_date} (today${USERDATA.config.force_timeline_start_delta} days)`)
+    } else {
+      message_components.push(`on or after ${start_date} (today+${USERDATA.config.force_timeline_start_delta} days)`)
+    }
+    
   }
   if (USERDATA.config.force_timeline_end) {
     data = data.filter(m => m.date <= USERDATA.config.force_timeline_end);
     data.push({
       date: USERDATA.config.force_timeline_end,
-      title: "Timeline End",
-      textStyle: { "opacity": "0.5" }
+      title: "{TIMELINE END}"
     })
-  }
+    message_components.push(`on or before ${USERDATA.config.force_timeline_end}`)
 
+  } else if (USERDATA.config.force_timeline_end_delta){
+    const end_date = getDateFromToday(USERDATA.config.force_timeline_end_delta)    
+    data = data.filter(m => m.date <= end_date);
+    data.push({
+      date: end_date,
+      title: "{TIMELINE END}"
+    })
+    if ( USERDATA.config.force_timeline_end_delta < 0 ){
+      message_components.push(`on or before ${end_date} (today${USERDATA.config.force_timeline_end_delta} days)`)
+    } else {
+      message_components.push(`on or before ${end_date} (today+${USERDATA.config.force_timeline_end_delta} days)`)
+    }
+  }
   console.log("TIMELINE: Rendering Milestone timeline.")
   renderTimeline("section#milestones #milestoneTimeline", data, function () {
-    $(".milestones-text-label").filter(function () {
+    $("#milestoneTimeline .milestones-text-label").filter(function () {
       return $.trim($(this).text()) === "Today";
     }).parent().parent().parent().parent().addClass("milestone-vis-today");
+    hideBasedOnSiblings(
+      $("#milestoneTimeline .milestones-text-label").filter(function () {
+        return $.trim($(this).text()) === "{TIMELINE START}";
+      })
+    )
+    hideBasedOnSiblings(
+      $("#milestoneTimeline .milestones-text-label").filter(function () {
+        return $.trim($(this).text()) === "{TIMELINE END}";
+      })
+    )    
   });
-  if (USERDATA.config.force_timeline_start && USERDATA.config.force_timeline_end) { 
-    $("#milestoneTimelineNote").text(`Timeline limited to dates on or after '${USERDATA.config.force_timeline_start}' and on or before '${USERDATA.config.force_timeline_end}'. Change this setting in General Configuration.`) 
-  }
-  else if (USERDATA.config.force_timeline_start) {
-    $("#milestoneTimelineNote").text(`Timeline limited to dates on or after '${USERDATA.config.force_timeline_start}'. Change this setting in General Configuration.`)  
-  }
-  else if (USERDATA.config.force_timeline_end) { 
-    $("#milestoneTimelineNote").text(`Timeline limited to dates on or before '${USERDATA.config.force_timeline_end}'. Change this setting in General Configuration.`)  
+  
+  if (message_components.length) { 
+    $("#milestoneTimelineNote").text(`Timeline limited to dates ${message_components.join(" and ")}. Change this setting in General Configuration.`)  
   }
 
 }
@@ -976,37 +1034,72 @@ function renderTasksTimeline(name) {
   // keep timeline ordered
   data.sort((a, b) => new Date(a.date) - new Date(b.date));
   
+  var message_components = [];
   if (USERDATA.config.force_timeline_start) {
     data = data.filter(m => m.date >= USERDATA.config.force_timeline_start);
     data.unshift({
       date: USERDATA.config.force_timeline_start,
-      title: "Timeline Start",
-      textStyle: { "opacity": "0.5" }
+      title: "{TIMELINE START}"
     })
+    message_components.push(`on or after ${USERDATA.config.force_timeline_start}`)
+
+  } else if (USERDATA.config.force_timeline_start_delta){
+    const start_date = getDateFromToday(USERDATA.config.force_timeline_start_delta)
+    data = data.filter(m => m.date >= start_date);
+    data.unshift({
+      date: start_date,
+      title: "{TIMELINE START}"
+    })
+    if ( USERDATA.config.force_timeline_start_delta < 0 ){
+      message_components.push(`on or after ${start_date} (today${USERDATA.config.force_timeline_start_delta} days)`)
+    } else {
+      message_components.push(`on or after ${start_date} (today+${USERDATA.config.force_timeline_start_delta} days)`)
+    }
+    
   }
   if (USERDATA.config.force_timeline_end) {
     data = data.filter(m => m.date <= USERDATA.config.force_timeline_end);
     data.push({
       date: USERDATA.config.force_timeline_end,
-      title: "Timeline End",
-      textStyle: { "opacity": "0.5" }
+      title: "{TIMELINE END}"
     })
-  }
+    message_components.push(`on or before ${USERDATA.config.force_timeline_end}`)
 
+  } else if (USERDATA.config.force_timeline_end_delta){
+    const end_date = getDateFromToday(USERDATA.config.force_timeline_end_delta)    
+    data = data.filter(m => m.date <= end_date);
+    data.push({
+      date: end_date,
+      title: "{TIMELINE END}"
+    })
+    if ( USERDATA.config.force_timeline_end_delta < 0 ){
+      message_components.push(`on or before ${end_date} (today${USERDATA.config.force_timeline_end_delta} days)`)
+    } else {
+      message_components.push(`on or before ${end_date} (today+${USERDATA.config.force_timeline_end_delta} days)`)
+    }
+  }
+  
   console.log(`TIMELINE: Rendering resource '${name}' timeline.`)
   renderTimeline(`#dialog-task-timeline .timeline-holder`, data, function () {
-    $(".milestones-text-label").filter(function () {
+    $("#dialog-task-timeline .timeline-holder .milestones-text-label").filter(function () {
       return $.trim($(this).text()) === "Today";
     }).parent().parent().parent().parent().addClass("milestone-vis-today");
-  });
-  if (USERDATA.config.force_timeline_start && USERDATA.config.force_timeline_end) { 
-    $(".timeline-holderNote").text(`Timeline limited to dates on or after '${USERDATA.config.force_timeline_start}' and on or before '${USERDATA.config.force_timeline_end}'. Change this setting in General Configuration.`) 
-  }
-  else if (USERDATA.config.force_timeline_start) {
-    $(".timeline-holderNote").text(`Timeline limited to dates on or after '${USERDATA.config.force_timeline_start}'. Change this setting in General Configuration.`)  
-  }
-  else if (USERDATA.config.force_timeline_end) { 
-    $(".timeline-holderNote").text(`Timeline limited to dates on or before '${USERDATA.config.force_timeline_end}'. Change this setting in General Configuration.`)  
+
+    hideBasedOnSiblings(
+      $("#dialog-task-timeline .timeline-holder .milestones-text-label").filter(function () {
+        return $.trim($(this).text()) === "{TIMELINE START}";
+      })
+    )
+    hideBasedOnSiblings(
+      $("#dialog-task-timeline .timeline-holder .milestones-text-label").filter(function () {
+        return $.trim($(this).text()) === "{TIMELINE END}";
+      })
+    ) 
+    
+  }); 
+  
+  if (message_components.length) { 
+    $(".timeline-holderNote").text(`Timeline limited to dates ${message_components.join(" and ")}. Change this setting in General Configuration.`)  
   }
 
 }
@@ -1076,7 +1169,7 @@ function addMilestone() {
   m.link = $("#dialog-add-milestone-other").val(); if (m.link == ""){ m.link = null; } $("#dialog-add-milestone-other").val("");
 
   USERDATA.milestones.push(m)
-  showToast('success', 'Milestone Added', `<strong>${m.text}</strong> was created!`)
+  showToast('success', 'Milestone Added', `<strong>${m.name}</strong> was created!`)
   updatePage();
 }
 // this shows the edit milestone modal
@@ -1474,6 +1567,8 @@ function setupConfigModal(){
   $("#dialog-configure-general-project-color").val(USERDATA.config.primary_color);
   $("#dialog-configure-general-milestone-start-date").val(USERDATA.config.force_timeline_start || "");
   $("#dialog-configure-general-milestone-end-date").val(USERDATA.config.force_timeline_end || "");
+  $("#dialog-configure-general-milestone-start-delta").val(USERDATA.config.force_timeline_start_delta || "");
+  $("#dialog-configure-general-milestone-end-delta").val(USERDATA.config.force_timeline_end_delta || "");
   $("#dialog-configure-general-soon").val(USERDATA.config.soon_duration);
   $('#dialog-configure-general').get(0).showModal();  
 }
@@ -1494,6 +1589,16 @@ function saveConfigFromModal() {
 
   USERDATA.config.force_timeline_end = $("#dialog-configure-general-milestone-end-date").val(); 
   if (USERDATA.config.force_timeline_end == "") { USERDATA.config.force_timeline_end = null; } $("#dialog-configure-general-milestone-end-date").val("");
+
+  USERDATA.config.force_timeline_start_delta = $("#dialog-configure-general-milestone-start-delta").val(); 
+  if (USERDATA.config.force_timeline_start_delta == "") { USERDATA.config.force_timeline_start_delta = null; } 
+  else { USERDATA.config.force_timeline_start_delta = Number(USERDATA.config.force_timeline_start_delta); }
+  $("#dialog-configure-general-milestone-start-delta").val("");
+
+  USERDATA.config.force_timeline_end_delta = $("#dialog-configure-general-milestone-end-delta").val(); 
+  if (USERDATA.config.force_timeline_end_delta == "") { USERDATA.config.force_timeline_end_delta = null; } 
+  else { USERDATA.config.force_timeline_end_delta = Number(USERDATA.config.force_timeline_end_delta); }
+  $("#dialog-configure-general-milestone-end-delta").val("");
 
   USERDATA.config.soon_duration = Number($("#dialog-configure-general-soon").val()); 
   if (USERDATA.config.soon_duration == "") { USERDATA.config.soon_duration = 7; } $("#dialog-configure-general-soon").val("");
