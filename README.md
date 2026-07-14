@@ -94,6 +94,16 @@ The dashboard can **save itself**:
 - Replace the previous file
 - Retain all data without external storage
 
+### Autosave & Recovery
+
+Unsaved changes are **autosaved to the browser's localStorage** (with a timestamp) whenever a change is made:
+
+- If the page is closed or the computer fails before saving the file, the changes can be recovered
+- On load, the dashboard prefers a **newer autosaved version** over the data saved in the HTML file (a toast notification indicates when this happens)
+- Saving the file clears the autosave
+- A **Discard** button allows unsaved changes to be thrown away, clearing the autosave and reloading the file's saved data
+- Autosaves are keyed to the file's path, so multiple dashboard files won't interfere with each other
+
 ### Export to Clipboard
 
 - Copies a formatted HTML summary of dashboard data

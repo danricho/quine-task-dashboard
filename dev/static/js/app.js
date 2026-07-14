@@ -248,16 +248,81 @@ function importUserData() {
 }
 
 // --------------------------------------------------- //
+//  AUTOSAVE FUNCTIONS (localStorage)
+// --------------------------------------------------- //
+
+// returns the localStorage key for the autosave (per file path so multiple dashboard files don't clash)
+function autosaveKey() {
+  return "quine_autosave_" + window.location.pathname;
+}
+// writes the current USERDATA (with a timestamp) to localStorage
+function writeAutosave() {
+  try {
+    localStorage.setItem(autosaveKey(), JSON.stringify({
+      timestamp: new Date().toISOString(),
+      data: USERDATA
+    }));
+  } catch (err) {
+    console.warn("AUTOSAVE: Write to localStorage failed.", err);
+  }
+}
+// removes the autosaved USERDATA from localStorage
+function clearAutosave() {
+  try { localStorage.removeItem(autosaveKey()); } catch (_) {}
+}
+// returns the parsed autosave entry from localStorage, or null
+function readAutosave() {
+  try {
+    const raw = localStorage.getItem(autosaveKey());
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (!parsed || !parsed.timestamp || !parsed.data) return null;
+    return parsed;
+  } catch (_) {
+    return null;
+  }
+}
+// on load: if an autosave exists and is newer than the file's last save, restore it. Returns true if restored.
+function restoreAutosaveIfNewer() {
+  if (readOnlyMode) return false;
+  const autosave = readAutosave();
+  if (!autosave) return false;
+  const fileSavedAt = new Date(USERDATA.config.last_saved || 0);
+  const autosavedAt = new Date(autosave.timestamp);
+  if (!(autosavedAt > fileSavedAt)) {
+    console.log("AUTOSAVE: Stale autosave found (older than file data) - discarding it.");
+    clearAutosave();
+    return false;
+  }
+  USERDATA = autosave.data;
+  console.log("AUTOSAVE: Restored unsaved changes from", autosave.timestamp);
+  return true;
+}
+// discards unsaved changes: clears the autosave and reloads the page (reverting to the file's saved data)
+function discardUnsavedChanges() {
+  clearAutosave();
+  unsavedChanges = false; // prevents the beforeunload warning during the reload
+  location.reload();
+}
+
+// --------------------------------------------------- //
 //  DOM RENDERING FUNCTIONS + HELPERS/TEMPLATES
 // --------------------------------------------------- //
 
-function setChangesPresent(changes){  
+function setChangesPresent(changes){
   $("button#button-save").prop("disabled", !changes)
+  $("button#button-discard").prop("disabled", !changes)
   $("button#button-save-read-only").prop("disabled", changes)
   $("button#button-export-clipboard").prop("disabled", changes)
   if (changes){ $("button#button-save").addClass("btn-primary ").removeClass("btn-secondary")
   }      else { $("button#button-save").addClass("btn-secondary").removeClass("btn-primary ") }
   unsavedChanges = changes;
+
+  // keep the localStorage autosave in step with the unsaved-changes state (recovery if the file is never saved)
+  if (!readOnlyMode){
+    if (changes){ writeAutosave(); }
+    else { clearAutosave(); }
+  }
 
 }
 // clears all data from the DOM (useful for reset/saving)
@@ -491,8 +556,16 @@ $( document ).ready(function() {
   themeChanger();
   scaleChanger();
 
+  // prefer a newer autosaved (localStorage) USERDATA over the version saved in the file
+  const autosaveRecovered = restoreAutosaveIfNewer();
+
   updatePage(); // first render
-  setChangesPresent(false);
+  setChangesPresent(autosaveRecovered);
+
+  if (autosaveRecovered){
+    showToast('info', 'Unsaved Changes Recovered',
+      "Autosaved changes newer than the file's data were restored.<br />Use <strong>Save</strong> to keep them or <strong>Discard</strong> to revert to the file's saved data.");
+  }
 
   // INITIALISATION
   const $root = $('#container');
@@ -561,6 +634,10 @@ $( document ).ready(function() {
   $("body").on('click', '#alert-delete-completed-tasks button.confirm', function(){
     deleteCompleteTasksBefore();
     $('#alert-delete-completed-tasks').get(0).close();
+  });
+  $("body").on('click', '#alert-discard-changes button.confirm', function(){
+    $('#alert-discard-changes').get(0).close();
+    discardUnsavedChanges();
   });
   $("body").on('click', '#dialog-configure-resources button.stage-resource-deletion', function(){
     $(this).parents(".editable-resource-entry").toggleClass("opacity-25");
