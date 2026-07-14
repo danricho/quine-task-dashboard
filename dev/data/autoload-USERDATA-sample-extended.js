@@ -7,7 +7,16 @@ USERDATA = {
     force_timeline_start: null,
     force_timeline_end: null,
     soon_duration: 7, // in days to go
+    milestoneStringBasedStyles: {"RR)": {"font-weight": "700", "font-size": "0.8rem", "line-height": "1.25", "display": "inline-block"}}
   },
+  links: [
+    ["Google1", "https://www.google.com"],
+    ["LinkedIn1", "https://www.linkedin.com"],
+    ["Google2", "https://www.google.com"],
+    ["LinkedIn2", "https://www.linkedin.com"],
+    ["Google3", "https://www.google.com"],
+    ["LinkedIn3", "https://www.linkedin.com"]
+  ],
   resources: [
     {
       "name": "Avery",

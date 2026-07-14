@@ -457,6 +457,7 @@ function updatePage(){
   var encoded = 'data:image/svg+xml,' + encodeURIComponent(USERDATA.config.logo).replace(/'/g, "%27").replace(/"/g, "%22");
   $('<link>', { rel: 'icon', type: 'image/svg+xml', href: encoded }).appendTo('head');
 
+  renderLinks();
   renderMilestoneList();
   renderMilestoneTimeline();
   renderResources();
@@ -700,6 +701,28 @@ function createTaskElement(t){
 
 }
 
+// LINKS SECTION -------------------------------
+
+// this renders the milestone list into the DOM
+function renderLinks(){
+  $("#link-list").empty();
+  USERDATA.links
+  .forEach(lnk => { 
+    console.log(lnk); 
+    var $link = $('<a>', {
+        text: lnk[0],
+        href: lnk[1],
+        target: "_blank",
+        class: ''
+      });
+    var $li = $('<li>', {
+        class: ''
+      }).append($link);
+      $("#link-list").append($li);
+  });
+
+}
+
 // MILESTONES SECTION -------------------------------
 
 // this renders the milestone list into the DOM
@@ -717,7 +740,23 @@ function renderMilestoneList(){
     })
     .forEach(ms => { milestoneArr.push(createMilestoneElement(ms)); })
   $("section#milestones #milestone-list").append(milestoneArr);
-
+  
+}
+// this function processes milestone data (for timeline) and applies styles per the general config
+function applyMilestoneStylesByTextMatch(milestoneArray) {
+  if (USERDATA.config.milestoneStringBasedStyles){
+    milestoneArray.forEach(item => {
+        text = item.title
+        text = text.toLowerCase();
+        $.each(USERDATA.config.milestoneStringBasedStyles, function (match, styles) {            
+            if (text.indexOf(match.toLowerCase()) !== -1) {
+              if (item.textStyle == undefined) { item.textStyle = {} }
+              item.textStyle = { ...item.textStyle, ...styles }
+            }
+        });
+    });
+  }
+  return milestoneArray
 }
 // this derives the data and calls renderTimeline() to render milestone timeline into the DOM
 function renderMilestoneTimeline() {
@@ -753,6 +792,8 @@ function renderMilestoneTimeline() {
       "font-style": "italic"
     } : undefined
   }));
+
+  data = applyMilestoneStylesByTextMatch(data);
 
   // --- Add a synthetic "Today" marker (red) ---
   const today = todayYMD();
@@ -1696,6 +1737,7 @@ function quineSavePage(readonly=false) {
   $("details#configurations-menu").prop("open", false);
   $(".toast").remove();
   $("#milestones-tab-2").click(); // make sure the milestones timeline is shown when saving
+  $("#links details").prop("open", false);
 
   USERDATA.config.last_saved = nowString();
 

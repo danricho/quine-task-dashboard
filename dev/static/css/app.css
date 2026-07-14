@@ -96,3 +96,49 @@ dialog#dialog-task-timeline div { max-width: 80%; }*/
 input[type="date"] { width: fit-content; }
 
 .milestone-vis-today * { border-color: red; }
+
+details>summary h1 { display: inline-block }
+details>summary h1:after {
+    width: calc(var(--spacing) * 3.5);
+    height: calc(var(--spacing) * 3.5);
+    background-color: var(--color-primary);
+    transition-property: transform, translate, scale, rotate;
+    transition-timing-function: var(--tw-ease, var(--default-transition-timing-function));
+    transition-duration: var(--tw-duration, var(--default-transition-duration));
+    --tw-ease: linear;
+    --tw-content: "";
+    content: var(--tw-content);
+    -webkit-mask-image: var(--chevron-down-icon);
+    -webkit-mask-image: var(--chevron-down-icon);
+    mask-image: var(--chevron-down-icon);
+    margin-left: 1rem;
+    transition-timing-function: linear;
+    display: inline-block;
+    -webkit-mask-position: 50%;
+    mask-position: 50%;
+    -webkit-mask-size: 1rem;
+    mask-size: 1rem;
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+}
+details:not([open])>summary h1:after {
+    rotate: -90deg;
+}
+
+@media (width >= 64rem) {
+  ul#link-list li { break-inside: avoid; }
+  ul#link-list {
+    column-count: 2; /* Automatically splits the list into 2 columns */
+    column-gap: 2rem; /* Space between columns */
+    list-style-position: inside; /* Ensures bullets stay inside the column */
+  }
+}
+@media (width >= 80rem) { ul#link-list { column-count: 3; } }
+ul#link-list a {color: var(--color-primary)}
+
+/* REFERENCES */ 
+@media (width >= 40rem) { /* sm	40rem (640px) */ }
+@media (width >= 48rem) { /* 48rem (768px) */ }
+@media (width >= 64rem) { /* lg	64rem (1024px) */ }
+@media (width >= 80rem) { /* xl	80rem (1280px) */ }
+@media (width >= 96rem) { /* 2xl	96rem (1536px) */ }

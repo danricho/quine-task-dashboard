@@ -8,6 +8,10 @@ USERDATA = {
     force_timeline_end: null,
     soon_duration: 7, // in days to go
   },
+  links: [
+    ["Google", "https://www.google.com"],
+    ["LinkedIn", "https://www.linkedin.com"]
+  ],
   resources: [
     {
       "name": "Avery",

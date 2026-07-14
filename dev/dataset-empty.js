@@ -7,7 +7,9 @@ USERDATA = {
     force_timeline_start: null,
     force_timeline_end: null,
     soon_duration: 7,
+    milestoneStringBasedStyles: {}
   },
+  links: [],
   milestones: [],
   resources: [],
   tasks: [],

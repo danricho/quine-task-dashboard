@@ -8,6 +8,10 @@
     "force_timeline_end": null,
     "soon_duration": 7
   },
+  "links": [
+    ["Google", "https://www.google.com"],
+    ["LinkedIn", "https://www.linkedin.com"]
+  ],
   "resources": [
     {
       "name": "Avery",
